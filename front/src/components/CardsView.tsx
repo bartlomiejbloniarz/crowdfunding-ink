@@ -3,7 +3,7 @@ import {
     Box,
     Button,
     Cards,
-    Header,
+    Header, Link,
     ProgressBar,
     SpaceBetween,
     TextFilter
@@ -14,25 +14,29 @@ const items = [
         name: "Project 1",
         description: "Raising money for ...",
         raised: 0,
-        goal: 100
+        goal: 100,
+        id: "0"
     },
     {
         name: "Project 2",
         description: "Raising money for ...",
         raised: 99,
-        goal: 100
+        goal: 100,
+        id: "1"
     },
     {
         name: "Project 3",
         description: "Raising money for ...",
         raised: 25,
-        goal: 100
+        goal: 100,
+        id: "2"
     },
     {
         name: "Project 4",
         description: "Raising money for ...",
         raised: 150,
-        goal: 1000
+        goal: 1000,
+        id: "3"
     },
 ]
 
@@ -45,7 +49,7 @@ const CardsView = () => {
     return (
         <Cards
             cardDefinition={{
-                header: e => e.name,
+                header: e => <Link fontSize={"heading-m"} href={`/projects/${e.id}`}>{e.name}</Link>,
                 sections: [
                     {
                         id: "description",
