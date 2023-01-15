@@ -2,73 +2,62 @@
 
 use ink_lang as ink;
 
+
 #[ink::contract]
 mod crowdfund {
 
-    /// Defines the storage of your contract.
-    /// Add new fields to the below struct in order
-    /// to add new static storage fields to your contract.
+
+    use ink_env::{transferred_value, caller, transfer};
+    use ink_storage::{traits::SpreadAllocate, Mapping};
+
     #[ink(storage)]
+    #[derive(SpreadAllocate)]
     pub struct Crowdfund {
-        /// Stores a single `bool` value on the storage.
-        value: bool,
+        deposits: Mapping<AccountId, u128>
     }
 
+    use ink_lang::utils::initialize_contract;
     impl Crowdfund {
-        /// Constructor that initializes the `bool` value to the given `init_value`.
+
         #[ink(constructor)]
-        pub fn new(init_value: bool) -> Self {
-            Self { value: init_value }
+        pub fn new() -> Self {
+            initialize_contract(|_: &mut Self| {})
         }
 
-        /// Constructor that initializes the `bool` value to `false`.
-        ///
-        /// Constructors can delegate to other constructors.
-        #[ink(constructor)]
-        pub fn default() -> Self {
-            Self::new(Default::default())
-        }
-
-        /// A message that can be called on instantiated contracts.
-        /// This one flips the value of the stored `bool` from `true`
-        /// to `false` and vice versa.
         #[ink(message)]
-        pub fn flip(&mut self) {
-            self.value = !self.value;
+        pub fn get_deposited_amount(&self, account: AccountId) -> u128 {
+            match self.deposits.get(account) {
+                Some(value) => value,
+                None => 0
+            }
         }
 
-        /// Simply returns the current value of our `bool`.
+        #[ink(message, payable)]
+        pub fn make_deposit(&mut self) {
+            let amount = transferred_value::<Environment>();
+            let caller = caller::<Environment>();
+            let deposited_amount = self.get_deposited_amount(caller);
+
+            self.deposits.insert(caller, &(deposited_amount + amount));
+        }
+
         #[ink(message)]
-        pub fn get(&self) -> bool {
-            self.value
+        pub fn claim(&mut self, amount: u128) -> bool { // amount is in the lowest acceptable fraction of TZERO
+            let caller = caller::<Environment>();
+            let deposited_amount = self.get_deposited_amount(caller);
+            
+            if amount > deposited_amount {
+                return false;
+            }
+
+            self.deposits.insert(caller, &(deposited_amount - amount));
+            match transfer::<Environment>(caller, amount) {
+                Ok(_)=> return true,
+                Err(_) => return false,
+            };
         }
     }
 
-    /// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
-    /// module and test functions are marked with a `#[test]` attribute.
-    /// The below code is technically just normal Rust code.
     #[cfg(test)]
-    mod tests {
-        /// Imports all the definitions from the outer scope so we can use them here.
-        use super::*;
-
-        /// Imports `ink_lang` so we can use `#[ink::test]`.
-        use ink_lang as ink;
-
-        /// We test if the default constructor does its job.
-        #[ink::test]
-        fn default_works() {
-            let crowdfund = Crowdfund::default();
-            assert_eq!(crowdfund.get(), false);
-        }
-
-        /// We test a simple use case of our contract.
-        #[ink::test]
-        fn it_works() {
-            let mut crowdfund = Crowdfund::new(false);
-            assert_eq!(crowdfund.get(), false);
-            crowdfund.flip();
-            assert_eq!(crowdfund.get(), true);
-        }
-    }
+    mod tests {}
 }
