@@ -4,7 +4,7 @@ use ink_lang as ink;
 
 #[ink::contract]
 mod crowdfund {
-
+    use ink_prelude::string::String;
     use ink_env::{block_timestamp, caller, transfer, transferred_value};
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
