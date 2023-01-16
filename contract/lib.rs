@@ -6,7 +6,7 @@ use ink_lang as ink;
 #[ink::contract]
 mod crowdfund {
 
-    use ink_env::{transferred_value, caller, transfer, block_timestamp};
+    use ink_env::{transferred_value, caller, transfer, block_timestamp, Environment};
     use ink_storage::{traits::{SpreadAllocate}, Mapping};
 
     #[derive(ink_storage::traits::PackedLayout, ink_storage::traits::SpreadLayout, scale::Encode, scale::Decode)]
@@ -33,6 +33,24 @@ mod crowdfund {
         #[ink(constructor)]
         pub fn new() -> Self {
             initialize_contract(|_: &mut Self| {})
+        }
+
+        #[ink(message)]
+        pub fn create_project(&mut self, project_name: String, description: String, deadline: Timestamp, goal: u128) {
+            assert!(!self.projects.contains(project_name), "Such project already exists.");
+            let author = caller::<Environment>();
+            let create_time = block_timestamp::<Environment>();
+
+            let info = ProjectInfo {
+                description,
+                author,
+                create_time,
+                deadline,
+                goal,
+            };
+
+            self.projects.insert(project_name, &info);
+            self.budgets.insert(project_name, &0);
         }
 
         #[ink(message)]
@@ -111,5 +129,11 @@ mod crowdfund {
     }
 
     #[cfg(test)]
-    mod tests {}
+    mod tests {
+        use crate::crowdfund::Crowdfund;
+        use ink_env::{test, DefaultEnvironment};
+        use ink_lang as ink;
+
+       
+    }
 }
