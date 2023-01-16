@@ -6,14 +6,25 @@ use ink_lang as ink;
 #[ink::contract]
 mod crowdfund {
 
+    use ink_env::{transferred_value, caller, transfer, block_timestamp};
+    use ink_storage::{traits::{SpreadAllocate}, Mapping};
 
-    use ink_env::{transferred_value, caller, transfer};
-    use ink_storage::{traits::SpreadAllocate, Mapping};
+    #[derive(ink_storage::traits::PackedLayout, ink_storage::traits::SpreadLayout, scale::Encode, scale::Decode)]
+    #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo))]
+    pub struct ProjectInfo{ // should never get modified
+        description: String,
+        author: AccountId,
+        create_time: Timestamp,
+        deadline: Timestamp,
+        goal: u128,
+    }
 
     #[ink(storage)]
     #[derive(SpreadAllocate)]
     pub struct Crowdfund {
-        deposits: Mapping<AccountId, u128>
+        projects: Mapping<String, ProjectInfo>,         // project --> static info about it
+        donations: Mapping<(String, AccountId), u128>,  // project, account --> donated amount
+        budgets: Mapping<String, u128>,                 // project --> overall collected budget
     }
 
     use ink_lang::utils::initialize_contract;
@@ -25,36 +36,77 @@ mod crowdfund {
         }
 
         #[ink(message)]
-        pub fn get_deposited_amount(&self, account: AccountId) -> u128 {
-            match self.deposits.get(account) {
+        pub fn get_donated_amount(&self, project_name: String, account: AccountId) -> u128 {
+            assert!(self.projects.contains(&project_name), "Such project doesn't exist.");
+            match self.donations.get((project_name, account)) {
                 Some(value) => value,
-                None => 0
+                None => 0,
+            }
+        }
+
+        #[ink(message)]
+        pub fn get_collected_budget(&self, project_name: String) -> u128 {
+            match self.budgets.get(project_name) {
+                Some(value) => value,
+                None => panic!("Such project doesn't exist.")
+            }
+        }
+
+        #[ink(message)]
+        pub fn get_project_info(&self, project_name: String) -> ProjectInfo {
+            match self.projects.get(project_name) {
+                Some(value) => value,
+                None => panic!("Such project doesn't exist."),
             }
         }
 
         #[ink(message, payable)]
-        pub fn make_deposit(&mut self) {
-            let amount = transferred_value::<Environment>();
-            let caller = caller::<Environment>();
-            let deposited_amount = self.get_deposited_amount(caller);
+        pub fn make_donation(&mut self, project_name: String) {
+            let info = self.get_project_info(project_name.clone()); // also checks if project exists
+            let current_time = block_timestamp::<Environment>();
+            assert!(current_time < info.deadline, "The project's deadline has passed. Not possible to contribute.");
 
-            self.deposits.insert(caller, &(deposited_amount + amount));
+            let donor = caller::<Environment>();
+            let donated = self.get_donated_amount(project_name.clone(), donor);
+            let value = transferred_value::<Environment>();
+            let budget = self.get_collected_budget(project_name.clone());
+
+            self.donations.insert((project_name.clone(), donor), &(donated + value));
+            self.budgets.insert(project_name, &(budget + value));
         }
 
         #[ink(message)]
-        pub fn claim(&mut self, amount: u128) -> bool { // amount is in the lowest acceptable fraction of TZERO
-            let caller = caller::<Environment>();
-            let deposited_amount = self.get_deposited_amount(caller);
-            
-            if amount > deposited_amount {
-                return false;
-            }
+        pub fn refund_donation(&mut self, project_name: String) {
+            let info = self.get_project_info(project_name.clone()); // also checks if project exists
+            let current_time = block_timestamp::<Environment>();
+            assert!(current_time >= info.deadline, "The project's deadline hasn't passed. Not possible to refund.");
 
-            self.deposits.insert(caller, &(deposited_amount - amount));
-            match transfer::<Environment>(caller, amount) {
-                Ok(_)=> return true,
-                Err(_) => return false,
-            };
+            let donor = caller::<Environment>();
+            let donated = self.get_donated_amount(project_name.clone(), donor);
+            let budget = self.get_collected_budget(project_name.clone());
+            assert!(donated > 0, "No funds to return.");
+
+            self.donations.insert((project_name.clone(), donor), &0);
+            self.budgets.insert(project_name, &(budget - donated));
+
+            transfer::<Environment>(donor, donated).expect("Transfer failed.");
+        }
+
+        #[ink(message)]
+        pub fn claim_budget(&mut self, project_name: String) {
+            let info = self.get_project_info(project_name.clone()); // also checks if project exists
+            let current_time = block_timestamp::<Environment>();
+            assert!(current_time >= info.deadline, "The project's deadline hasn't passed. Not possible to claim budget.");
+
+            let author = caller::<Environment>();
+            assert!(author == info.author, "You are not the author of this project. Not possible to claim budget.");
+
+            let budget = self.get_collected_budget(project_name.clone());
+            assert!(budget > 0, "No funds to claim.");
+
+            self.budgets.insert(project_name, &0);
+            
+            transfer::<Environment>(author, budget).expect("Transfer failed.");
         }
     }
 
