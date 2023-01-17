@@ -17,11 +17,11 @@ mod crowdfund {
     #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
     pub struct ProjectInfo {
         // should never get modified
-        description: String,
-        author: AccountId,
-        create_time: Timestamp,
-        deadline: Timestamp,
-        goal: u128,
+        pub description: String,
+        pub author: AccountId,
+        pub create_time: Timestamp,
+        pub deadline: Timestamp,
+        pub goal: u128,
     }
 
     #[ink(storage)]
@@ -150,88 +150,77 @@ mod crowdfund {
             transfer::<Environment>(author, budget).expect("Transfer failed.");
         }
     }
+}
 
-    #[cfg(test)]
-    mod tests {
-        
-        use crate::crowdfund::Crowdfund;
-        use ink_env::{test::{self}, DefaultEnvironment};
-        use ink_lang as ink;
 
-        use super::ProjectInfo;
+#[cfg(test)]
+mod tests {
 
-        #[ink::test]
-        fn test_create_project() {
-            let accs = test::default_accounts::<DefaultEnvironment>();
-            test::set_caller::<DefaultEnvironment>(accs.alice);
-            let mut contract = Crowdfund::new();
+    use crate::crowdfund::ProjectInfo;
+    use crate::crowdfund::Crowdfund;
+    use ink_env::{test::{self}, DefaultEnvironment};
+    use ink_lang as ink;
 
-            contract.create_project(String::from("Doll"), String::from("I want a doll."), 5, 10);
-            test::set_caller::<DefaultEnvironment>(accs.bob);
-            contract.create_project(String::from("Toy car"), String::from("I want a toy car."), 6, 12);
 
-            assert_eq!(contract.projects.contains("Doll"), true);
-            assert_eq!(
-                contract.projects.get(String::from("Doll")).expect(""),
-                ProjectInfo {
-                    description: String::from("I want a doll."),
-                    author: accs.alice,
-                    create_time: 0,
-                    deadline: 5,
-                    goal: 10,
-                }
-            );
+    #[ink::test]
+    fn test_create_project() {
+        let accs = test::default_accounts::<DefaultEnvironment>();
+        test::set_caller::<DefaultEnvironment>(accs.alice);
+        let mut contract = Crowdfund::new();
 
-            assert_eq!(contract.projects.contains("Toy car"), true);
-            assert_eq!(
-                contract.projects.get(String::from("Toy car")).expect(""),
-                ProjectInfo {
-                    description: String::from("I want a toy car."),
-                    author: accs.bob,
-                    create_time: 0,
-                    deadline: 6,
-                    goal: 12,
-                }
-            );
-        }
+        contract.create_project(String::from("Doll"), String::from("I want a doll."), 5, 10);
+        test::set_caller::<DefaultEnvironment>(accs.bob);
+        contract.create_project(String::from("Toy car"), String::from("I want a toy car."), 6, 12);
 
-        #[ink::test]
-        fn test_donation_balances() {
-            let accs = test::default_accounts::<DefaultEnvironment>();
-            test::set_caller::<DefaultEnvironment>(accs.alice);
-            let mut contract = Crowdfund::new();
+        assert_eq!(
+            contract.get_project_info(String::from("Doll")),
+            ProjectInfo {
+                description: String::from("I want a doll."),
+                author: accs.alice,
+                create_time: 0,
+                deadline: 5,
+                goal: 10,
+            }
+        );
 
-            contract.create_project(String::from("Doll"), String::from("I want a doll."), 1000, 500);
-            test::set_caller::<DefaultEnvironment>(accs.bob);
-            contract.create_project(String::from("Toy car"), String::from("I want a toy car."), 1200, 600);
-
-            test::set_caller::<DefaultEnvironment>(accs.charlie);
-            test::set_value_transferred::<DefaultEnvironment>(350);
-            contract.make_donation(String::from("Doll"));
-            
-            test::set_caller::<DefaultEnvironment>(accs.django);
-            test::set_value_transferred::<DefaultEnvironment>(450);
-            contract.make_donation(String::from("Toy car"));
-
-            assert_eq!(contract.donations.contains((String::from("Doll"), accs.charlie)), true);
-            assert_eq!(contract.donations.contains((String::from("Toy car"), accs.django)), true);
-            assert_eq!(contract.donations.contains((String::from("Doll"), accs.django)), false);
-            assert_eq!(contract.donations.contains((String::from("Toy car"), accs.charlie)), false);
-
-            assert_eq!(contract.donations.get((String::from("Doll"), accs.charlie)).expect(""), 350);
-            assert_eq!(contract.donations.get((String::from("Toy car"), accs.django)).expect(""), 450);
-
-            assert_eq!(contract.get_donated_amount(String::from("Doll"), accs.charlie), 350);
-            assert_eq!(contract.get_donated_amount(String::from("Toy car"), accs.django), 450);
-            assert_eq!(contract.get_donated_amount(String::from("Toy car"), accs.charlie), 0);
-            assert_eq!(contract.get_donated_amount(String::from("Doll"), accs.django), 0);
-
-            assert_eq!(contract.budgets.contains(String::from("Doll")), true);
-            assert_eq!(contract.budgets.contains(String::from("Toy car")), true);
-            assert_eq!(contract.budgets.get(String::from("Doll")).expect(""), 350);
-            assert_eq!(contract.budgets.get(String::from("Toy car")).expect(""), 450);
-        }
-
-        // TODO - tests for claiming and refunding when we decide the exact rules.
+        assert_eq!(
+            contract.get_project_info(String::from("Toy car")),
+            ProjectInfo {
+                description: String::from("I want a toy car."),
+                author: accs.bob,
+                create_time: 0,
+                deadline: 6,
+                goal: 12,
+            }
+        );
     }
+
+    #[ink::test]
+    fn test_donation_balances() {
+        let accs = test::default_accounts::<DefaultEnvironment>();
+        test::set_caller::<DefaultEnvironment>(accs.alice);
+        let mut contract = Crowdfund::new();
+
+        contract.create_project(String::from("Doll"), String::from("I want a doll."), 1000, 500);
+        test::set_caller::<DefaultEnvironment>(accs.bob);
+        contract.create_project(String::from("Toy car"), String::from("I want a toy car."), 1200, 600);
+
+        test::set_caller::<DefaultEnvironment>(accs.charlie);
+        test::set_value_transferred::<DefaultEnvironment>(350);
+        contract.make_donation(String::from("Doll"));
+        
+        test::set_caller::<DefaultEnvironment>(accs.django);
+        test::set_value_transferred::<DefaultEnvironment>(450);
+        contract.make_donation(String::from("Toy car"));
+
+        assert_eq!(contract.get_donated_amount(String::from("Doll"), accs.charlie), 350);
+        assert_eq!(contract.get_donated_amount(String::from("Toy car"), accs.django), 450);
+        assert_eq!(contract.get_donated_amount(String::from("Toy car"), accs.charlie), 0);
+        assert_eq!(contract.get_donated_amount(String::from("Doll"), accs.django), 0);
+
+        assert_eq!(contract.get_collected_budget(String::from("Doll")), 350);
+        assert_eq!(contract.get_collected_budget(String::from("Toy car")), 450);
+    }
+
+    // TODO - tests for claiming and refunding when we decide the exact rules.
 }
