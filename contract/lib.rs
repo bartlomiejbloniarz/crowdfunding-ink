@@ -17,6 +17,7 @@ mod crowdfund {
         CantDonateOwnProject,
         DeadlineNotPassedYet,
         DeadlinePassed,
+        GoalNotReached,
         NoFundsDontatedNoVote,
         NoFundsToClaim,
         NoFundsToRefund,
@@ -30,7 +31,7 @@ mod crowdfund {
     #[derive(ink_storage::traits::PackedLayout, ink_storage::traits::SpreadLayout, scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
     pub struct ProjectInfo {
-        // should never get modified
+        // Immutable information about project.
         pub description: String,
         pub author: AccountId,
         pub create_time: Timestamp,
@@ -50,11 +51,13 @@ mod crowdfund {
     #[ink(storage)]
     #[derive(SpreadAllocate)]
     pub struct Crowdfund {
+        // Mappings from (project) to ...
         projects: Mapping<String, ProjectInfo>,         // project --> static info about it
-        donations: Mapping<(String, AccountId), u128>,  // project, account --> donated amount
         budgets: Mapping<String, u128>,                 // project --> overall collected budget
+        voting_state: Mapping<String, ProjectVotes>,    // project --> voting state
+        // Mappings from (project, account) to ...
+        donations: Mapping<(String, AccountId), u128>,  // project, account --> donated amount
         votes: Mapping<(String, AccountId), bool>,      // project, account --> has voted
-        voting_state: Mapping<String, ProjectVotes>,     // project --> voting state
     }
 
     use ink_lang::utils::initialize_contract;
@@ -66,6 +69,7 @@ mod crowdfund {
 
         #[ink(message)]
         pub fn create_project(&mut self, project_name: String, description: String, deadline: Timestamp, goal: u128) -> Result<(), Error> {
+            // Verify that no project of the given name exists.
             if self.projects.contains(project_name.clone()) {
                 return Err(Error::ProjectAlreadyExists);
             }
@@ -73,6 +77,7 @@ mod crowdfund {
             let author = self.env().caller();
             let create_time = self.env().block_timestamp();
 
+            // Compose immutable project info.
             let info = ProjectInfo {
                 description,
                 author,
@@ -81,8 +86,16 @@ mod crowdfund {
                 goal,
             };
 
+            // Initial voting state (no votes).
+            let voting_state = ProjectVotes{
+                ovr_voted_yes: 0,
+                ovr_voted_no: 0,
+            };
+
+            // Initialize the project in storage.
             self.projects.insert(project_name.clone(), &info);
-            self.budgets.insert(project_name, &0);
+            self.budgets.insert(project_name.clone(), &0);
+            self.voting_state.insert(project_name, &voting_state);
             Ok(())
         }
 
@@ -136,32 +149,38 @@ mod crowdfund {
 
         #[ink(message, payable)]
         pub fn make_donation(&mut self, project_name: String) -> Result<(), Error> {
-            let info = match self.get_project_info(project_name.clone()) { // also checks if project exists
+            // Fetch project info. It checks if the project exists.
+            let info = match self.get_project_info(project_name.clone()) {
                 Ok(value) => value,
                 Err(error) => return Err(error),
             };
 
+            // Donations after the deadline are not permitted.
             let current_time = self.env().block_timestamp();
             if current_time >= info.deadline {
-                return Err(Error::DeadlinePassed)
+                return Err(Error::DeadlinePassed);
             }
 
+            // Assuming the author can't donate to their own project.
             let donor = self.env().caller();
             if donor == info.author {
-                return Err(Error::CantDonateOwnProject)
+                return Err(Error::CantDonateOwnProject);
             }
 
+            // Fetch the already donated amount.
             let donated = match self.get_donated_amount(project_name.clone(), donor) {
                 Ok(value) => value,
                 Err(error) => return Err(error),
             };
 
+            // Fetch the transferred value and the project's collected budget.
             let value = self.env().transferred_value();
             let budget = match self.get_collected_budget(project_name.clone()) {
                 Ok(value) => value,
                 Err(error) => return Err(error),
             };
 
+            // Make note of the donation and update the collected budget.
             self.donations.insert((project_name.clone(), donor), &(donated + value));
             self.budgets.insert(project_name, &(budget + value));
             Ok(())
@@ -169,21 +188,35 @@ mod crowdfund {
 
         #[ink(message)]
         pub fn make_vote(&mut self, project_name: String, vote: bool) -> Result<(), Error> {
+            // Fetch project info. It checks if the project exists.
             let info = match self.get_project_info(project_name.clone()) { // also checks if project exists
                 Ok(value) => value,
                 Err(error) => return Err(error),
             };
 
+            // Voting before the project's deadline is not permitted.
             let current_time = self.env().block_timestamp();
             if current_time < info.deadline {
                 return Err(Error::DeadlineNotPassedYet);
             }
 
+            let budget = match self.get_collected_budget(project_name.clone()) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            
+            // Voting is needed only if the goal of the project was reached.
+            if budget < info.goal {
+                return Err(Error::GoalNotReached);
+            }
+
             let account = self.env().caller();
 
             match self.get_vote(project_name.clone(), account) {
+                // Ok means that a vote from this account corresponding to this project was recorded. Duplicate votes are not permitted.
                 Ok(_) => return Err(Error::AlreadyVoted),
-                Err(_) => () // project exists so this is NoSuchVote. This is good.
+                // Project exists so the following error must be NoSuchVote. This is expected.
+                Err(_) => ()
             };
 
             let donated = match self.get_donated_amount(project_name.clone(), account) {
@@ -191,6 +224,7 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
+            // No need to perform a 0 transaction.
             if donated <= 0 {
                 return Err(Error::NoFundsDontatedNoVote);
             }
@@ -200,11 +234,13 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
+            // Update the corresponding weighted sum of votes according to the vote.
             match vote {
                 true => voting_state.ovr_voted_yes += donated,
                 false => voting_state.ovr_voted_no += donated,
             }
 
+            // Override the voting state in storage & make note of the vote.
             self.voting_state.insert(project_name.clone(), &voting_state);
             self.votes.insert((project_name, account), &vote);
             Ok(())
@@ -212,11 +248,13 @@ mod crowdfund {
 
         #[ink(message)]
         pub fn refund_donation(&mut self, project_name: String) -> Result<(), Error> {
+            // Fetch project info. It checks if the project exists.
             let info = match self.get_project_info(project_name.clone()) { // also checks if project exists
                 Ok(value) => value,
                 Err(error) => return Err(error),
             };
 
+            // Making a refund is only possible after the deadline has passed.
             let current_time = self.env().block_timestamp();
             if current_time < info.deadline {
                 return Err(Error::DeadlineNotPassedYet)
@@ -228,8 +266,9 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
+            // No need to perform a 0 transaction.
             if donated <= 0 {
-                return Err(Error::NoFundsToRefund)
+                return Err(Error::NoFundsToRefund);
             }
 
             let budget = match self.get_collected_budget(project_name.clone()) {
@@ -237,22 +276,30 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
-            let voting_state = match self.get_voting_state(project_name.clone()) {
-                Ok(value) => value,
-                Err(error) => return Err(error),
-            };
+            // If the goal was reached then refunds are possible only if the voting indicates it.
+            if budget >= info.goal {
+                let voting_state = match self.get_voting_state(project_name.clone()) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
 
-            if 2 * voting_state.ovr_voted_yes > budget { // more than half voted yes
-                return Err(Error::CampaignSuccessfulNoRefunds);
+                // More than half voted yes implies the campaign was successful.
+                if 2 * voting_state.ovr_voted_yes > budget {
+                    return Err(Error::CampaignSuccessfulNoRefunds);
+                }
+
+                // Less than half voted no & at most half voted yes doesn't imply any campaign result yet.
+                if 2 * voting_state.ovr_voted_no < budget {
+                    return Err(Error::CampaingResultUnknown);
+                }
             }
 
-            if 2 * voting_state.ovr_voted_no < budget {  // less than half voted no & at most half voted yes => ambiguous state
-                return Err(Error::CampaingResultUnknown);
-            }
+            // All conditions to make a refund were met.
 
+            // Truncate the donated amount to 0. This ensures that no donor will refund their funds twice.
             self.donations.insert((project_name.clone(), donor), &0);
-            self.budgets.insert(project_name, &(budget - donated));
 
+            // Transfer the refund.
             match self.env().transfer(donor, donated) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(Error::TransferFailed)
@@ -261,17 +308,21 @@ mod crowdfund {
 
         #[ink(message)]
         pub fn claim_budget(&mut self, project_name: String) -> Result<(), Error> {
-            let info = match self.get_project_info(project_name.clone()) { // also checks if project exists
+            // Fetch project info. It checks if the project exists.
+            let info = match self.get_project_info(project_name.clone()) {
                 Ok(value) => value,
                 Err(error) => return Err(error),
             };
 
+            // Claiming the collected budget is only possible after the deadline.
             let current_time = self.env().block_timestamp();
             if current_time < info.deadline {
                 return Err(Error::DeadlineNotPassedYet)
             }
 
             let author = self.env().caller();
+
+            // Only the author of the project can claim the budget.
             if author != info.author {
                 return Err(Error::YouAreNotTheFather);
             }
@@ -281,8 +332,14 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
+            // No need to perform a 0 transaction.
             if budget <= 0 {
                 return Err(Error::NoFundsToClaim);
+            }
+
+            // The campaign can be successful only if the goal was reached.
+            if budget < info.goal {
+                return Err(Error::GoalNotReached);
             }
 
             let voting_state = match self.get_voting_state(project_name.clone()) {
@@ -290,16 +347,23 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
-            if 2 * voting_state.ovr_voted_no >= budget {  // at least half voted no
+            // The budget can be claimed by the author only if the voting indicates it.
+
+            // At least half voted no implies the campaign was unsuccessful.
+            if 2 * voting_state.ovr_voted_no >= budget {
                 return Err(Error::CampaignUnsuccessfulNoClaims);
             }
 
-            if 2 * voting_state.ovr_voted_yes <= budget { // at most half voted yes & less than half voted no => ambiguous state
+
+            // At most half voted yes & less than half voted no doesn't imply any result yet.
+            if 2 * voting_state.ovr_voted_yes <= budget {
                 return Err(Error::CampaingResultUnknown);
             }
 
+            // Truncate the budget to 0. This ensures that no author will claim their funds twice.
             self.budgets.insert(project_name, &0);
 
+            // Transfer the claim.
             match self.env().transfer(author, budget) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(Error::TransferFailed)
