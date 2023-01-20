@@ -10,14 +10,21 @@ mod crowdfund {
     #[derive(ink_storage::traits::PackedLayout, ink_storage::traits::SpreadLayout, scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
     pub enum Error {
+        AlreadyVoted,
+        CampaingResultUnknown,
+        CampaignSuccessfulNoRefunds,
+        CampaignUnsuccessfulNoClaims,
+        CantDonateOwnProject,
+        DeadlineNotPassedYet,
+        DeadlinePassed,
+        NoFundsDontatedNoVote,
+        NoFundsToClaim,
+        NoFundsToRefund,
+        NoSuchVote,
         ProjectAlreadyExists,
         ProjectDoesntExist,
-        DeadlinePassed,
-        DeadlineNotPassedYet,
-        NoFundsToRefund,
-        NoFundsToClaim,
         TransferFailed,
-        YouAreNotTheAuthor,
+        YouAreNotTheFather,
     }
 
     #[derive(ink_storage::traits::PackedLayout, ink_storage::traits::SpreadLayout, scale::Encode, scale::Decode)]
@@ -31,12 +38,23 @@ mod crowdfund {
         pub goal: u128,
     }
 
+    #[derive(ink_storage::traits::PackedLayout, ink_storage::traits::SpreadLayout, scale::Encode, scale::Decode)]
+    #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
+    pub struct ProjectVotes {
+        // rules:   2 * ovr_voted_yes > budget ==> campaign successful
+        //          2 * ovr_voted_no >= budget ==> campaign unsuccessful (weak inequality to break tie when half voted yes & half voted no)
+        pub ovr_voted_yes: u128,
+        pub ovr_voted_no: u128,
+    }
+
     #[ink(storage)]
     #[derive(SpreadAllocate)]
     pub struct Crowdfund {
         projects: Mapping<String, ProjectInfo>,         // project --> static info about it
         donations: Mapping<(String, AccountId), u128>,  // project, account --> donated amount
         budgets: Mapping<String, u128>,                 // project --> overall collected budget
+        votes: Mapping<(String, AccountId), bool>,      // project, account --> has voted
+        voting_state: Mapping<String, ProjectVotes>,     // project --> voting state
     }
 
     use ink_lang::utils::initialize_contract;
@@ -69,18 +87,6 @@ mod crowdfund {
         }
 
         #[ink(message)]
-        pub fn get_donated_amount(&self, project_name: String, account: AccountId) -> Result<u128, Error> {
-            if !self.projects.contains(&project_name) {
-                return Err(Error::ProjectDoesntExist);
-            }
-
-            Result::Ok(match self.donations.get((project_name, account)) {
-                Some(value) => value,
-                None => 0,
-            })
-        }
-
-        #[ink(message)]
         pub fn get_collected_budget(&self, project_name: String) -> Result<u128, Error> {
             match self.budgets.get(project_name) {
                 Some(value) => Result::Ok(value),
@@ -93,6 +99,38 @@ mod crowdfund {
             match self.projects.get(project_name) {
                 Some(value) => Ok(value),
                 None => Err(Error::ProjectDoesntExist),
+            }
+        }
+
+        #[ink(message)]
+        pub fn get_donated_amount(&self, project_name: String, account: AccountId) -> Result<u128, Error> {
+            if !self.projects.contains(&project_name) {
+                return Err(Error::ProjectDoesntExist);
+            }
+
+            Result::Ok(match self.donations.get((project_name, account)) {
+                Some(value) => value,
+                None => 0,
+            })
+        }
+
+        #[ink(message)]
+        pub fn get_voting_state(&self, project_name: String) -> Result<ProjectVotes, Error> {
+            match self.voting_state.get(project_name) {
+                Some(value) => Ok(value),
+                None => Err(Error::ProjectDoesntExist),
+            }
+        }
+
+        #[ink(message)]
+        pub fn get_vote(&self, project_name: String, account: AccountId) -> Result<bool, Error> {
+            if !self.projects.contains(&project_name) {
+                return Err(Error::ProjectDoesntExist);
+            }
+
+            match self.votes.get((project_name, account)) {
+                Some(value) => Ok(value),
+                None => Err(Error::NoSuchVote),
             }
         }
 
@@ -109,6 +147,10 @@ mod crowdfund {
             }
 
             let donor = self.env().caller();
+            if donor == info.author {
+                return Err(Error::CantDonateOwnProject)
+            }
+
             let donated = match self.get_donated_amount(project_name.clone(), donor) {
                 Ok(value) => value,
                 Err(error) => return Err(error),
@@ -122,6 +164,49 @@ mod crowdfund {
 
             self.donations.insert((project_name.clone(), donor), &(donated + value));
             self.budgets.insert(project_name, &(budget + value));
+            Ok(())
+        }
+
+        #[ink(message)]
+        pub fn make_vote(&mut self, project_name: String, vote: bool) -> Result<(), Error> {
+            let info = match self.get_project_info(project_name.clone()) { // also checks if project exists
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
+            let current_time = self.env().block_timestamp();
+            if current_time < info.deadline {
+                return Err(Error::DeadlineNotPassedYet);
+            }
+
+            let account = self.env().caller();
+
+            match self.get_vote(project_name.clone(), account) {
+                Ok(_) => return Err(Error::AlreadyVoted),
+                Err(_) => () // project exists so this is NoSuchVote. This is good.
+            };
+
+            let donated = match self.get_donated_amount(project_name.clone(), account) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
+            if donated <= 0 {
+                return Err(Error::NoFundsDontatedNoVote);
+            }
+
+            let mut voting_state = match self.get_voting_state(project_name.clone()) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
+            match vote {
+                true => voting_state.ovr_voted_yes += donated,
+                false => voting_state.ovr_voted_no += donated,
+            }
+
+            self.voting_state.insert(project_name.clone(), &voting_state);
+            self.votes.insert((project_name, account), &vote);
             Ok(())
         }
 
@@ -152,6 +237,19 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
+            let voting_state = match self.get_voting_state(project_name.clone()) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
+            if 2 * voting_state.ovr_voted_yes > budget { // more than half voted yes
+                return Err(Error::CampaignSuccessfulNoRefunds);
+            }
+
+            if 2 * voting_state.ovr_voted_no < budget {  // less than half voted no & at most half voted yes => ambiguous state
+                return Err(Error::CampaingResultUnknown);
+            }
+
             self.donations.insert((project_name.clone(), donor), &0);
             self.budgets.insert(project_name, &(budget - donated));
 
@@ -175,7 +273,7 @@ mod crowdfund {
 
             let author = self.env().caller();
             if author != info.author {
-                return Err(Error::YouAreNotTheAuthor);
+                return Err(Error::YouAreNotTheFather);
             }
 
             let budget = match self.get_collected_budget(project_name.clone()) {
@@ -185,6 +283,19 @@ mod crowdfund {
 
             if budget <= 0 {
                 return Err(Error::NoFundsToClaim);
+            }
+
+            let voting_state = match self.get_voting_state(project_name.clone()) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
+            if 2 * voting_state.ovr_voted_no >= budget {  // at least half voted no
+                return Err(Error::CampaignUnsuccessfulNoClaims);
+            }
+
+            if 2 * voting_state.ovr_voted_yes <= budget { // at most half voted yes & less than half voted no => ambiguous state
+                return Err(Error::CampaingResultUnknown);
             }
 
             self.budgets.insert(project_name, &0);
