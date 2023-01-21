@@ -1,55 +1,56 @@
-import React from 'react';
-import {
-    Box,
-    Button,
-    Cards,
-    Header, Link,
-    ProgressBar,
-    SpaceBetween,
-    TextFilter
-} from "@cloudscape-design/components";
+import React, {useEffect, useState} from 'react';
+import {Box, Button, Cards, Header, ProgressBar, SpaceBetween, TextFilter} from "@cloudscape-design/components";
+import Link from "../utils/Link";
+import {useApi} from "../App";
+import CreateForm from "./CreateForm";
 
-const items = [
-    {
-        name: "Project 1",
-        description: "Raising money for ...",
-        raised: 0,
-        goal: 100,
-        id: "0"
-    },
-    {
-        name: "Project 2",
-        description: "Raising money for ...",
-        raised: 99,
-        goal: 100,
-        id: "1"
-    },
-    {
-        name: "Project 3",
-        description: "Raising money for ...",
-        raised: 25,
-        goal: 100,
-        id: "2"
-    },
-    {
-        name: "Project 4",
-        description: "Raising money for ...",
-        raised: 150,
-        goal: 1000,
-        id: "3"
-    },
-]
+interface ItemType{
+    name: string,
+    description: string,
+    raised: number,
+    goal: number
+}
+
 
 const CardsView = () => {
-    const [
-        filteringText,
-        setFilteringText
-    ] = React.useState("");
+    const [filteringText, setFilteringText] = useState("");
+    const [projects, setProjects] = useState(["BB fund", "BB fund 2", "BB fund 3", "BB fund 4"])
+    const [items, setItems] = useState<ItemType[]>([])
+    const [isFormVisible, setIsFormVisible] = useState(false)
+
+    const api = useApi()
+
+    useEffect(() => {
+        const getProjectsInfo = async () => {
+            const res: ItemType[] = []
+
+            for (const index in projects) {
+                const project = projects[index]
+                const info = await api.getProjectInfo(project)
+                const raised = await api.getCollectedBudget(project)
+
+                res.push(
+                    {
+                        description: info.description,
+                        goal: info.goal,
+                        name: project,
+                        raised: raised
+                    }
+                )
+            }
+
+            return res
+        }
+
+        getProjectsInfo().then(setItems).catch(console.log)
+    }, [projects])
 
     return (
+        <>
+        <CreateForm visible={isFormVisible} dismiss={() => setIsFormVisible(false)}/>
         <Cards
             cardDefinition={{
-                header: e => <Link fontSize={"heading-m"} href={`/projects/${e.id}`}>{e.name}</Link>,
+                header: e => <Link fontSize={"heading-m"} href={`/projects/${e.name}`} >{e.name}</Link>,
                 sections: [
                     {
                         id: "description",
@@ -100,7 +101,7 @@ const CardsView = () => {
                 <Header
                     actions={
                         <SpaceBetween direction="horizontal" size="xs">
-                            <Button variant="primary">
+                            <Button variant="primary" onClick={() => setIsFormVisible(true)}>
                                 Create project
                             </Button>
                         </SpaceBetween>
@@ -109,6 +110,7 @@ const CardsView = () => {
                 </Header>
             }
         />
+        </>
     )
 }
 

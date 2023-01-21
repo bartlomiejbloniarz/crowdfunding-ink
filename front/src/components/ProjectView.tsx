@@ -1,10 +1,62 @@
-import React from 'react';
-import {AppLayout, Header, TextContent} from "@cloudscape-design/components";
+import React, {useEffect, useState} from 'react';
+import {
+    AppLayout,
+    Box,
+    ColumnLayout,
+    Container,
+    Header, ProgressBar,
+    SpaceBetween,
+    TextContent
+} from "@cloudscape-design/components";
 import {useParams} from "react-router-dom";
+import {ProjectInfo} from "../api/Types";
+import {useApi} from "../App";
 
 const ProjectView = () => {
 
-    const {id} = useParams()
+    const {projectName} = useParams()
+    const [projectInfo, setProjectInfo] = useState<ProjectInfo>()
+    const [raised, setRaised] = useState(0)
+
+    const api = useApi()
+
+    useEffect(() => {
+        api.getProjectInfo(projectName!).then(setProjectInfo)
+        api.getCollectedBudget(projectName!).then(setRaised)
+    }, [projectName])
+
+    const content = projectInfo ? (
+        <ColumnLayout columns={2} variant="text-grid">
+            <SpaceBetween size="l">
+                <div>
+                    <Box variant="awsui-key-label">Description</Box>
+                    <div>{projectInfo.description}</div>
+                </div>
+                <div>
+                    <Box variant="awsui-key-label">Creation time</Box>
+                    <div>{projectInfo.createTime.toLocaleString()}</div>
+                </div>
+                <div>
+                    <Box variant="awsui-key-label">Deadline</Box>
+                    <div>{projectInfo.deadline.toLocaleString()}</div>
+                </div>
+            </SpaceBetween>
+
+            <SpaceBetween size="l">
+                <div>
+                    <Box variant="awsui-key-label">Goal</Box>
+                    <div>{projectInfo.goal}</div>
+                </div>
+                <div>
+                    <Box variant="awsui-key-label">Raised</Box>
+                    <div>{raised}</div>
+                </div>
+                <div>
+                    <ProgressBar value={raised/projectInfo.goal*100}/>
+                </div>
+            </SpaceBetween>
+        </ColumnLayout>
+    ) : <></>
 
     return (
         <AppLayout
@@ -14,13 +66,13 @@ const ProjectView = () => {
                 <Header
                     variant={"h1"}
                 >
-                    Page not implemented yet
+                    {projectName}
                 </Header>
             }
             content={
-                <TextContent>
-                    {`Project id: ${id}`}
-                </TextContent>
+            <Container>
+                {content}
+            </Container>
             }
         />
     )

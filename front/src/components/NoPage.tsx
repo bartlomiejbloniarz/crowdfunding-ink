@@ -2,6 +2,8 @@ import React from 'react';
 import {AppLayout, Header} from "@cloudscape-design/components";
 
 const NoPage = () => {
+
+
     return (
         <AppLayout
             toolsHide={true}
