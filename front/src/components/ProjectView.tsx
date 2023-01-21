@@ -4,13 +4,14 @@ import {
     Box,
     ColumnLayout,
     Container,
-    Header, ProgressBar,
-    SpaceBetween,
-    TextContent
+    Header,
+    Icon,
+    ProgressBar,
+    SpaceBetween
 } from "@cloudscape-design/components";
 import {useParams} from "react-router-dom";
 import {ProjectInfo} from "../api/Types";
-import {useApi} from "../App";
+import {useApi, useOriginAddress} from "../App";
 
 const ProjectView = () => {
 
@@ -19,6 +20,7 @@ const ProjectView = () => {
     const [raised, setRaised] = useState(0)
 
     const api = useApi()
+    const originAddress = useOriginAddress()
 
     useEffect(() => {
         api.getProjectInfo(projectName!).then(setProjectInfo)
@@ -65,6 +67,7 @@ const ProjectView = () => {
             contentHeader={
                 <Header
                     variant={"h1"}
+                    info={projectInfo?.author === originAddress ? <Icon variant={"subtle"} name={"user-profile"}/>: <></>}
                 >
                     {projectName}
                 </Header>

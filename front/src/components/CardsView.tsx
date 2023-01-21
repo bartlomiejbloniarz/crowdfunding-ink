@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Cards, Header, ProgressBar, SpaceBetween, TextFilter} from "@cloudscape-design/components";
+import {Box, Button, Cards, Header, ProgressBar, Select, SpaceBetween, TextFilter} from "@cloudscape-design/components";
 import Link from "../utils/Link";
-import {useApi} from "../App";
+import {useAccounts, useAccountSelect, useApi} from "../App";
 import CreateForm from "./CreateForm";
 
 interface ItemType{
@@ -17,8 +17,10 @@ const CardsView = () => {
     const [projects, setProjects] = useState(["BB fund", "BB fund 2", "BB fund 3", "BB fund 4"])
     const [items, setItems] = useState<ItemType[]>([])
     const [isFormVisible, setIsFormVisible] = useState(false)
+    const {selectedAccount, setSelectedAccount} = useAccountSelect()
 
     const api = useApi()
+    const accounts = useAccounts()
 
     useEffect(() => {
         const getProjectsInfo = async () => {
@@ -101,6 +103,16 @@ const CardsView = () => {
                 <Header
                     actions={
                         <SpaceBetween direction="horizontal" size="xs">
+                            <Select selectedOption={selectedAccount}
+                                                    onChange={({detail}) => {
+                                                        setSelectedAccount(detail.selectedOption)
+                                                    }
+                                                    }
+                                                    loadingText={"select"}
+                                                    options={accounts.map(x => {
+                                                        return {label: x.meta.name!, value: x.address}
+                                                    })}
+                                                    selectedAriaLabel="Selected"/>
                             <Button variant="primary" onClick={() => setIsFormVisible(true)}>
                                 Create project
                             </Button>

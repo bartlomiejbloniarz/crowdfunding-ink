@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {AppLayout, Container, Header, Select, Spinner,} from "@cloudscape-design/components";
+import {AppLayout, Header, Spinner,} from "@cloudscape-design/components";
 import {BrowserRouter, Route, Routes} from "react-router-dom";
 import MainPage from "./components/MainPage";
 import ProjectView from "./components/ProjectView";
@@ -15,13 +15,32 @@ import {API} from "./api/Methods";
 
 const ApiContext = createContext<API|null>(null)
 const AccountsContext = createContext<InjectedAccountWithMeta[]>([])
+// const OriginAddressContext = createContext<string|null>(null)
+const AccountContext = createContext<{
+    selectedAccount: OptionDefinition
+    setSelectedAccount: (optionDefinition: OptionDefinition) => void
+} | null>(null)
 
 export const useApi = () => {
     return useContext(ApiContext)!
 }
 
+export const useOriginAddress = () => {
+    return useContext(AccountContext)!.selectedAccount.value
+}
+
+export const useAccountSelect = () => {
+    return useContext(AccountContext)!
+}
+
 export const useAccounts = () => {
     return useContext(AccountsContext)!
+}
+
+export const useSelectOrigin = () => {
+    return (
+        <div></div>
+    )
 }
 
 const getOptions = (api: ApiPromise) => {
@@ -42,7 +61,7 @@ const App = (props: {contractAddress: string}) => {
 
     const [apiPromise, setApiPromise] = useState<ApiPromise | null>(null)
     const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([])
-    const [originAddress, setOriginAddress] = useState<string | null>(null)
+    // const [originAddress, setOriginAddress] = useState<string | null>(null)
     const [selectedOption, setSelectedOption] = useState<OptionDefinition | null>(null)
 
     useEffect(() => {
@@ -53,10 +72,14 @@ const App = (props: {contractAddress: string}) => {
                 return [];
             }
             return web3Accounts()
-        }).then(setAccounts)
+        }).then(a => {
+            setAccounts(a)
+            if (a.length>0)
+                setSelectedOption({label: a[0].meta.name!, value: a[0].address})
+        })
     }, [])
 
-    if (!apiPromise) {
+    if (!apiPromise || !selectedOption) {
         return (
             <AppLayout
                 toolsHide={true}
@@ -75,37 +98,39 @@ const App = (props: {contractAddress: string}) => {
         )
     }
 
-    if (!originAddress) {
-        return (
-            <AppLayout
-                toolsHide={true}
-                navigationHide={true}
-                contentHeader={
-                    <Header
-                        variant="h1"
-                    >
-                        Crowdfunding platform
-                    </Header>
-                }
-                content={
-                    <Container header={<Header>Choose account:</Header>}>
-                    <Select selectedOption={selectedOption}
-                            onChange={({detail}) => {
-                                setSelectedOption(detail.selectedOption)
-                                setOriginAddress(detail.selectedOption.value!)
-                            }
-                            }
-                            loadingText={"select"}
-                            options={accounts.map(x => {
-                                return {label: x.meta.name!, value: x.address}
-                            })}
-                            selectedAriaLabel="Selected"/>
-                    </Container>
-                }
-            />
+    const originAddress = selectedOption.value!
 
-        )
-    }
+    // if (!originAddress) {
+    //     return (
+    //         <AppLayout
+    //             toolsHide={true}
+    //             navigationHide={true}
+    //             contentHeader={
+    //                 <Header
+    //                     variant="h1"
+    //                 >
+    //                     Crowdfunding platform
+    //                 </Header>
+    //             }
+    //             content={
+    //                 <Container header={<Header>Choose account:</Header>}>
+    //                 <Select selectedOption={selectedOption}
+    //                         onChange={({detail}) => {
+    //                             setSelectedOption(detail.selectedOption)
+    //                             setOriginAddress(detail.selectedOption.value!)
+    //                         }
+    //                         }
+    //                         loadingText={"select"}
+    //                         options={accounts.map(x => {
+    //                             return {label: x.meta.name!, value: x.address}
+    //                         })}
+    //                         selectedAriaLabel="Selected"/>
+    //                 </Container>
+    //             }
+    //         />
+    //
+    //     )
+    // }
 
     const contract = new ContractPromise(apiPromise, metadata, props.contractAddress);
 
@@ -114,6 +139,8 @@ const App = (props: {contractAddress: string}) => {
     return (
         <ApiContext.Provider value={api}>
             <AccountsContext.Provider value={accounts}>
+                {/*<OriginAddressContext.Provider value={originAddress}>*/}
+                    <AccountContext.Provider value={{selectedAccount: selectedOption, setSelectedAccount: setSelectedOption}}>
                 <BrowserRouter>
                     <Routes>
                         <Route path="/">
@@ -123,6 +150,8 @@ const App = (props: {contractAddress: string}) => {
                         </Route>
                     </Routes>
                 </BrowserRouter>
+                    </AccountContext.Provider>
+                {/*</OriginAddressContext.Provider>*/}
             </AccountsContext.Provider>
         </ApiContext.Provider>
     )
