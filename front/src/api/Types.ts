@@ -19,5 +19,6 @@ export interface ProjectInfo {
 }
 
 export interface ProjectVotes {
-
+    ovrVotedYes: number,
+    ovrVotedNo: number
 }

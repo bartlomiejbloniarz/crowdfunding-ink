@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Cards, Header, ProgressBar, SpaceBetween, TextFilter} from "@cloudscape-design/components";
+import {Box, Button, Cards, Header, Input, ProgressBar, SpaceBetween, TextFilter} from "@cloudscape-design/components";
 import Link from "../utils/Link";
-import {useApi} from "../App";
+import {useApi, useForceUpdate} from "../App";
 import CreateForm from "./CreateForm";
 import {formatCurrency} from "../utils/Utils";
+import {KeyCode} from "@cloudscape-design/components/internal/keycode";
 
 interface ItemType{
     name: string,
@@ -15,36 +16,41 @@ interface ItemType{
 
 const CardsView = () => {
     const [filteringText, setFilteringText] = useState("");
-    const [projects, setProjects] = useState(["BB fund", "BB fund 2", "BB fund 3", "BB fund 4", "BB fund 5", "BB fund 6"])
+    const [projects, setProjects] = useState(["BB fund 2", "BB fund 3", "BB fund 4", "BB fund 5", "BB fund 6", "BB fund 7"])
     const [items, setItems] = useState<ItemType[]>([])
     const [isFormVisible, setIsFormVisible] = useState(false)
+    const [input, setInput] = useState("")
 
     const api = useApi()
+
+    const {dependency, forceUpdate} = useForceUpdate()
 
     useEffect(() => {
         const getProjectsInfo = async () => {
             const res: ItemType[] = []
 
             for (const index in projects) {
-                const project = projects[index]
-                const info = await api.getProjectInfo(project)
-                const raised = await api.getCollectedBudget(project)
+                try {
+                    const project = projects[index]
+                    const info = await api.getProjectInfo(project)
+                    const raised = await api.getCollectedBudget(project)
 
-                res.push(
-                    {
-                        description: info.description,
-                        goal: info.goal,
-                        name: project,
-                        raised: raised
-                    }
-                )
+                    res.push(
+                        {
+                            description: info.description,
+                            goal: info.goal,
+                            name: project,
+                            raised: raised
+                        }
+                    )
+                } catch (e) {}
             }
 
             return res
         }
 
         getProjectsInfo().then(setItems).catch(console.log)
-    }, [api, projects])
+    }, [dependency, api, projects])
 
     return (
         <>
@@ -102,6 +108,18 @@ const CardsView = () => {
                 <Header
                     actions={
                         <SpaceBetween direction="horizontal" size="m">
+                            <Input
+                                placeholder={"Import project by name"}
+                                onKeyDown={event => {
+                                if (event.detail.key === "Enter") {
+                                    setProjects(projects => projects.concat(input))
+                                    setInput("")
+                                }
+                                }}
+                                onChange={event => {
+                                    setInput(event.detail.value)
+                                }}
+                                value={input}/>
                             <Button variant="primary" onClick={() => setIsFormVisible(true)}>
                                 Create project
                             </Button>

@@ -204,20 +204,26 @@ export class API {
         });
     }
 
-    async makeVote(projectName: string, vote: boolean){
+    async makeVote(projectName: string, vote: boolean, handler: Handler<void>){
+        const outcome = await this.contract.query.makeVote(
+            this.originAddress,
+            this.options,
+            projectName,
+            vote
+        )
+
+        getResult<void>(outcome)
+
         const injector = await web3FromAddress(this.originAddress);
 
         const unsub = await this.contract.tx.makeVote(
             this.options,
             projectName,
             vote
-        ).signAndSend(this.originAddress, {signer: injector.signer}, (result) => {
-            if (result.status.isInBlock) {
-                console.log(`Transaction included at blockHash ${result.status.asInBlock}`);
-            } else if (result.status.isFinalized) {
-                console.log(`Transaction finalized at blockHash ${result.status.asFinalized}`);
-                unsub();
-            }
+        ).signAndSend(this.originAddress, {signer: injector.signer}, result => {
+            this.handleResult(result, handler)
+            if (result.status.isFinalized)
+                unsub()
         });
     }
 

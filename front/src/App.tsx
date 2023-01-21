@@ -1,6 +1,6 @@
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {
-    AppLayout,
+    AppLayout, Button,
     Container,
     Flashbar,
     FlashbarProps,
@@ -146,6 +146,7 @@ const App = () => {
     const accountSelector = (
         <SpaceBetween direction={"horizontal"} size={"s"}>
 
+            <Button variant={"icon"} iconName={"refresh"} onClick={() => setValue(value => value+1)}/>
         <Select selectedOption={selectedOption}
                 onChange={({detail}) => {
                     setSelectedOption(detail.selectedOption)

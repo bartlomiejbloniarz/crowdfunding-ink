@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {
-    AppLayout,
+    AppLayout, BarChart,
     Box,
     Button,
     ButtonDropdown,
@@ -14,7 +14,7 @@ import {
     SpaceBetween
 } from "@cloudscape-design/components";
 import {useParams} from "react-router-dom";
-import {ProjectInfo} from "../api/Types";
+import {ProjectInfo, ProjectVotes} from "../api/Types";
 import {useAccounts, useAccountSelector, useApi, useFlashbar, useForceUpdate, useOriginAddress} from "../App";
 import {formatCurrency} from "../utils/Utils";
 
@@ -25,6 +25,7 @@ const ProjectView = () => {
     const [raised, setRaised] = useState(0)
     const [contribution, setContribution] = useState(0)
     const [input, setInput] = useState("")
+    const [votes, setVotes] = useState<ProjectVotes>({ovrVotedYes: 1, ovrVotedNo: 0})
 
     const api = useApi()
     const originAddress = useOriginAddress()
@@ -40,6 +41,7 @@ const ProjectView = () => {
         api.getProjectInfo(projectName!).then(setProjectInfo).catch(addError)
         api.getCollectedBudget(projectName!).then(setRaised).catch(addError)
         api.getDonatedAmount(projectName!, originAddress).then(setContribution).catch(addError)
+        api.getVotingState(projectName!).then(setVotes).catch(e => addError(`GetVotingState: ${e}`))
         // api.getCollectedBudgetSub(projectName!, {handleOk: setRaised, handleErr: addError}).catch(addError)
         // api.getDonatedAmountSub(projectName!, originAddress, {handleOk: setContribution, handleErr: addError}).catch(addError)
     }, [dependency, api, projectName, originAddress])
@@ -68,7 +70,7 @@ const ProjectView = () => {
                     </div>
                 </SpaceBetween>
 
-                <SpaceBetween size="l">
+                <SpaceBetween size="xxl">
                     <div>
                         <Box variant="awsui-key-label">Goal</Box>
                         <div>{formatCurrency(projectInfo.goal)}</div>
@@ -89,43 +91,97 @@ const ProjectView = () => {
                                 <center><strong>The goal has been reached!</strong></center>
                         }
                     </div>
+                    {raised > 0 ? (
+                        <BarChart
+                            series={[
+                                {
+                                    title: "Yes",
+                                    type: "bar",
+                                    valueFormatter: e => `${(100 * e / raised).toFixed(0)}%`,
+                                    data: [
+                                        {x: "Votes", y: votes.ovrVotedYes},
+                                    ]
+                                },
+                                {
+                                    title: "No",
+                                    type: "bar",
+                                    valueFormatter: e => `${(100 * e / raised).toFixed(0)}%`,
+                                    data: [
+                                        {x: "Votes", y: votes.ovrVotedNo},
+                                    ]
+                                },
+                                {
+                                    title: "Hasn't voted yet",
+                                    type: "bar",
+                                    valueFormatter: e => `${(100 * e / raised).toFixed(0)}%`,
+                                    data: [
+                                        {x: "Votes", y: raised - votes.ovrVotedNo - votes.ovrVotedYes},
+                                    ]
+                                }
+                            ]}
+                            xDomain={["Votes"]}
+                            yDomain={[0, raised]}
+                            height={10}
+                            horizontalBars
+                            hideFilter
+                            loadingText="Loading chart"
+                            recoveryText="Retry"
+                            stackedBars
+                            xScaleType="categorical"
+                            xTitle="Voting"
+                            empty={
+                                <Box textAlign="center" color="inherit">
+                                    <b>No data available</b>
+                                    <Box variant="p" color="inherit">
+                                        There is no data available
+                                    </Box>
+                                </Box>
+                            }
+                            noMatch={
+                                <Box textAlign="center" color="inherit">
+                                    <b>No matching data</b>
+                                    <Box variant="p" color="inherit">
+                                        There is no matching data to display
+                                    </Box>
+                                    <Button>Clear filter</Button>
+                                </Box>
+                            }
+                        />) : <></>}
+
+
+                    <FormField label={"Donate"}>
+                        <SpaceBetween direction={"horizontal"} size={"s"}>
+                            <Input onChange={event => setInput(event.detail.value)} inputMode={"numeric"}
+                                   placeholder={"Amount"} value={input}/>
+                            <ButtonDropdown onItemClick={event => {
+                                const value = Number(input) * 10 ** Number(event.detail.id)
+                                if (isNaN(value))
+                                    addError("Not a number")
+                                else {
+                                    setInput("")
+                                    api.makeDonation(
+                                        projectName!,
+                                        value,
+                                        {
+                                            handleOk: forceUpdate,
+                                            handleErr: addError
+                                        }).catch(addError)
+                                }
+                            }} items={[
+                                {text: "TZERO", id: "12"},
+                                {text: "mTZERO", id: "9"},
+                                {text: "µTZERO", id: "6"},
+                                {text: "nTZERO", id: "3"},
+                                {text: "pTZERO", id: "0"},
+                            ]}>
+                                Donate
+                            </ButtonDropdown>
+                        </SpaceBetween>
+                    </FormField>
+
                 </SpaceBetween>
             </ColumnLayout>
-            <Box float={"right"}>
 
-                <FormField label={"Donate"}>
-                    <SpaceBetween direction={"horizontal"} size={"s"}>
-                        <Input onChange={event => setInput(event.detail.value)} inputMode={"numeric"}
-                               placeholder={"Amount"} value={input}/>
-                        <ButtonDropdown onItemClick={event => {
-                            const value = Number(input) * 10 ** Number(event.detail.id)
-                            if (isNaN(value))
-                                addError("Not a number")
-                            else {
-                                setInput("")
-                                api.makeDonation(
-                                    projectName!,
-                                    value,
-                                    {
-                                        handleOk: forceUpdate,
-                                        handleErr: addError
-                                    }).catch(addError)
-                            }
-                        }}
-                                        items={[
-                                            {text: "TZERO", id: "12"},
-                                            {text: "mTZERO", id: "9"},
-                                            {text: "µTZERO", id: "6"},
-                                            {text: "nTZERO", id: "3"},
-                                            {text: "pTZERO", id: "0"},
-                                        ]}
-                        >
-                            Donate
-                        </ButtonDropdown>
-                    </SpaceBetween>
-                </FormField>
-
-            </Box>
         </SpaceBetween>
     ) : <></>
 
@@ -154,6 +210,23 @@ const ProjectView = () => {
                             <Header
                                 actions={
                                     <SpaceBetween direction={"horizontal"} size={"s"}>
+                                        <ButtonDropdown
+                                            onItemClick={event =>
+                                                api.makeVote(
+                                                    projectName!,
+                                                    event.detail.id === "1",
+                                                    {
+                                                        handleOk: forceUpdate,
+                                                        handleErr: addError
+                                                    }).catch(addError)
+
+                                            }
+                                            items={[
+                                                {text: "Yes", id: "1"},
+                                                {text: "No", id: "0"}
+                                            ]}>
+                                            Vote
+                                        </ButtonDropdown>
                                         <Button onClick={() => api.refundDonation(projectName!, {
                                             handleOk: () => console.log("OK"),
                                             handleErr: addError
