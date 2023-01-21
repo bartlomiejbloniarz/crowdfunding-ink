@@ -36,7 +36,7 @@ type Handler<T> = {
     handleErr: (str: string) => void
 }
 
-const contractAddress = "5GWXEiZeb7wVxCJCHkDv3AgCtHFhvCsNDgeobAv3Nfox6xxP"
+const contractAddress = "5EzqL1Dj9WZCmCir9VU2Py1z5nhM3RsCGy9ycudCUNNFGZ1c"
 
 export class API {
     private readonly api: ApiPromise

@@ -1,6 +1,7 @@
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {
-    AppLayout, Button,
+    AppLayout,
+    Button,
     Container,
     Flashbar,
     FlashbarProps,
@@ -10,7 +11,7 @@ import {
     SpaceBetween,
     Spinner,
 } from "@cloudscape-design/components";
-import {BrowserRouter, Route, Routes} from "react-router-dom";
+import {HashRouter, Route, Routes} from "react-router-dom";
 import MainPage from "./components/MainPage";
 import ProjectView from "./components/ProjectView";
 import NoPage from "./components/NoPage";
@@ -167,7 +168,7 @@ const App = () => {
                 <OriginAddressContext.Provider value={originAddress!}>
                     <AccountContext.Provider value={accountSelector}>
                         <ForceUpdateContext.Provider value={{dependency: value, forceUpdate: () => setValue(value => value+1)}}>
-                        <BrowserRouter>
+                        <HashRouter>
                             <Routes>
                                 <Route path="/">
                                     <Route index element={<MainPage/>}/>
@@ -175,7 +176,7 @@ const App = () => {
                                     <Route path="*" element={<NoPage/>}/>
                                 </Route>
                             </Routes>
-                        </BrowserRouter>
+                        </HashRouter>
                         </ForceUpdateContext.Provider>
                     </AccountContext.Provider>
                 </OriginAddressContext.Provider>

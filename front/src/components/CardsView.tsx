@@ -16,7 +16,7 @@ interface ItemType{
 
 const CardsView = () => {
     const [filteringText, setFilteringText] = useState("");
-    const [projects, setProjects] = useState(["BB fund 2", "BB fund 3", "BB fund 4", "BB fund 5", "BB fund 6", "BB fund 7"])
+    const [projects, setProjects] = useState(["BB fund", "BB fund 2", "BB fund 3", "BB fund 4", "BB fund 5", "BB fund 6", "BB fund 7"])
     const [items, setItems] = useState<ItemType[]>([])
     const [isFormVisible, setIsFormVisible] = useState(false)
     const [input, setInput] = useState("")
