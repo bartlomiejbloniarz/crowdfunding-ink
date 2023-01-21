@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Cards, Header, ProgressBar, Select, SpaceBetween, TextFilter} from "@cloudscape-design/components";
+import {Box, Button, Cards, Header, ProgressBar, SpaceBetween, TextFilter} from "@cloudscape-design/components";
 import Link from "../utils/Link";
-import {useAccounts, useAccountSelect, useApi} from "../App";
+import {useApi} from "../App";
 import CreateForm from "./CreateForm";
+import {formatCurrency} from "../utils/Utils";
 
 interface ItemType{
     name: string,
@@ -14,13 +15,11 @@ interface ItemType{
 
 const CardsView = () => {
     const [filteringText, setFilteringText] = useState("");
-    const [projects, setProjects] = useState(["BB fund", "BB fund 2", "BB fund 3", "BB fund 4"])
+    const [projects, setProjects] = useState(["BB fund", "BB fund 2", "BB fund 3", "BB fund 4", "BB fund 5", "BB fund 6"])
     const [items, setItems] = useState<ItemType[]>([])
     const [isFormVisible, setIsFormVisible] = useState(false)
-    const {selectedAccount, setSelectedAccount} = useAccountSelect()
 
     const api = useApi()
-    const accounts = useAccounts()
 
     useEffect(() => {
         const getProjectsInfo = async () => {
@@ -45,7 +44,7 @@ const CardsView = () => {
         }
 
         getProjectsInfo().then(setItems).catch(console.log)
-    }, [projects])
+    }, [api, projects])
 
     return (
         <>
@@ -62,12 +61,12 @@ const CardsView = () => {
                     {
                         id: "raised",
                         header: "Raised",
-                        content: e => e.raised
+                        content: e => formatCurrency(e.raised)
                     },
                     {
                         id: "goal",
                         header: "Goal",
-                        content: e => e.goal
+                        content: e => formatCurrency(e.goal)
                     },
                     {
                         id: "progress",
@@ -102,17 +101,7 @@ const CardsView = () => {
             header={
                 <Header
                     actions={
-                        <SpaceBetween direction="horizontal" size="xs">
-                            <Select selectedOption={selectedAccount}
-                                                    onChange={({detail}) => {
-                                                        setSelectedAccount(detail.selectedOption)
-                                                    }
-                                                    }
-                                                    loadingText={"select"}
-                                                    options={accounts.map(x => {
-                                                        return {label: x.meta.name!, value: x.address}
-                                                    })}
-                                                    selectedAriaLabel="Selected"/>
+                        <SpaceBetween direction="horizontal" size="m">
                             <Button variant="primary" onClick={() => setIsFormVisible(true)}>
                                 Create project
                             </Button>

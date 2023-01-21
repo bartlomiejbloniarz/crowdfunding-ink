@@ -8,8 +8,6 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
-    <App
-    contractAddress={"5GWXEiZeb7wVxCJCHkDv3AgCtHFhvCsNDgeobAv3Nfox6xxP"}
-    />
+    <App/>
 );
 

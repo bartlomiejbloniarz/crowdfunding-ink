@@ -1,51 +1,110 @@
 import {ProjectInfo, ProjectInfoResponse, ProjectVotes, Result} from "./Types";
 import {ContractPromise} from "@polkadot/api-contract";
-import type {ContractExecResultResult, WeightV2} from '@polkadot/types/interfaces';
-import type {Codec} from '@polkadot/types/types';
+import type {WeightV2} from '@polkadot/types/interfaces';
 import {web3FromAddress} from "@polkadot/extension-dapp";
+import {ApiPromise} from "@polkadot/api";
+import metadata from "../resources/metadata.json"
+import {ContractCallOutcome} from "@polkadot/api-contract/types";
+import {ISubmittableResult} from "@polkadot/types/types/extrinsic";
 
-function handleResult<T>(result: ContractExecResultResult, output: Codec | null): T {
-    if (result.isOk) {
-        const x = output!.toJSON() as Result<T>
+function getResult<T>(outcome: ContractCallOutcome): T {
+    if (outcome.result.isOk) {
+        const x = outcome.output!.toJSON() as Result<T>
         if ("ok" in x)
             return x.ok
         throw x.err
     }
 
-    throw result.asErr.toHuman()
+    throw outcome.result.asErr.toHuman()
 }
 
+function handleOutcome<T>(outcome: ContractCallOutcome, handler: Handler<T>) {
+    if (outcome.result.isOk) {
+        const x = outcome.output!.toJSON() as Result<T>
+        if ("ok" in x) {
+            console.log(x.ok)
+            return handler.handleOk(x.ok)
+        }
+        return handler.handleErr(x.err)
+    }
+
+    return handler.handleErr(outcome.result.asErr.toHuman()!.toString())
+}
+
+type Handler<T> = {
+    handleOk: (t: T) => void
+    handleErr: (str: string) => void
+}
+
+const contractAddress = "5GWXEiZeb7wVxCJCHkDv3AgCtHFhvCsNDgeobAv3Nfox6xxP"
 
 export class API {
-    private contract: ContractPromise
-    private originAddress: string
-    private options: {gasLimit: WeightV2, storageDepositLimit: null}
+    private readonly api: ApiPromise
+    private readonly contract: ContractPromise
+    private readonly originAddress: string
+    private readonly options: {gasLimit: WeightV2, storageDepositLimit: null}
 
-    constructor(contract: ContractPromise, origin: string, options: {gasLimit: WeightV2, storageDepositLimit: null}) {
-        this.contract = contract
+    constructor(api: ApiPromise, origin: string, options: {gasLimit: WeightV2, storageDepositLimit: null}) {
+        this.api = api
+        this.contract = new ContractPromise(api, metadata, contractAddress)
         this.originAddress = origin
         this.options = options
     }
 
+    private handleResult(result: ISubmittableResult, handler: Handler<void>){
+        if (result.status.isFinalized){
+            if (result.dispatchError) {
+                if (result.dispatchError.isModule) {
+                    const decoded = this.api.registry.findMetaError(result.dispatchError.asModule);
+                    const { docs, name, section } = decoded;
+                    handler.handleErr(`${section}.${name}: ${docs.join(' ')}`);
+                } else {
+                    handler.handleErr(result.dispatchError.toString());
+                }
+            }
+            else{
+                handler.handleOk()
+            }
+        }
+    }
+
+    async getAccountBalance(): Promise<number>{
+        const result = await this.api.query.system.account(this.originAddress)
+        const x = result.toJSON() as {data: {free: string}}
+        return Number(x.data.free)
+    }
+
     async getCollectedBudget(projectName: string): Promise<number> {
-        const {result, output} = await this.contract.query.getCollectedBudget(
+        const outcome = await this.contract.query.getCollectedBudget(
             this.originAddress,
             this.options,
             projectName
         )
 
-        return handleResult(result, output)
+        return getResult(outcome)
+    }
+
+    async getCollectedBudgetSub(projectName: string, handler: Handler<number>) {
+        const unsub = await this.api.query.contracts.contractInfoOf(contractAddress, async () => {
+            const outcome = await this.contract.query.getCollectedBudget(
+                this.originAddress,
+                this.options,
+                projectName
+            )
+
+            handleOutcome(outcome, handler)
+        });
     }
 
 
     async getProjectInfo(projectName: string): Promise<ProjectInfo> {
-        const {result, output} = await this.contract.query.getProjectInfo(
+        const outcome = await this.contract.query.getProjectInfo(
             this.originAddress,
             this.options,
             projectName
         )
 
-        const response = handleResult<ProjectInfoResponse>(result, output)
+        const response = getResult<ProjectInfoResponse>(outcome)
         return {
             author: response.author,
             createTime: new Date(response.createTime),
@@ -56,35 +115,48 @@ export class API {
     }
 
     async getDonatedAmount(projectName: string, account: string): Promise<number> {
-        const {result, output} = await this.contract.query.getDonatedAmount(
+        const outcome = await this.contract.query.getDonatedAmount(
             this.originAddress,
             this.options,
             projectName,
             account
         )
 
-        return handleResult(result, output)
+        return getResult(outcome)
+    }
+
+    async getDonatedAmountSub(projectName: string, account: string, handler: Handler<number>) {
+        const unsub = await this.api.query.contracts.contractInfoOf(contractAddress, async () => {
+            const outcome = await this.contract.query.getDonatedAmount(
+                this.originAddress,
+                this.options,
+                projectName,
+                account
+            )
+
+            handleOutcome(outcome, handler)
+        });
     }
 
     async getVotingState(projectName: string): Promise<ProjectVotes> {
-        const {result, output} = await this.contract.query.getVotingState(
+        const outcome = await this.contract.query.getVotingState(
             this.originAddress,
             this.options,
             projectName,
         )
 
-        return handleResult(result, output)
+        return getResult(outcome)
     }
 
     async getVote(projectName: string, account: string): Promise<boolean> {
-        const {result, output} = await this.contract.query.getVote(
+        const outcome = await this.contract.query.getVote(
             this.originAddress,
             this.options,
             projectName,
             account
         )
 
-        return handleResult(result, output)
+        return getResult(outcome)
     }
 
     async createProject(
@@ -111,19 +183,24 @@ export class API {
         });
     }
 
-    async makeDonation(projectName: string){
+    async makeDonation(projectName: string, value: number, handler: Handler<void>){
+        const outcome = await this.contract.query.makeDonation(
+            this.originAddress,
+            this.options,
+            projectName
+        )
+
+        getResult<void>(outcome)
+
         const injector = await web3FromAddress(this.originAddress);
 
         const unsub = await this.contract.tx.makeDonation(
-            this.options,
-            projectName,
-        ).signAndSend(this.originAddress, {signer: injector.signer}, (result) => {
-            if (result.status.isInBlock) {
-                console.log(`Transaction included at blockHash ${result.status.asInBlock}`);
-            } else if (result.status.isFinalized) {
-                console.log(`Transaction finalized at blockHash ${result.status.asFinalized}`);
-                unsub();
-            }
+            {...this.options, value},
+            projectName
+        ).signAndSend(this.originAddress, {signer: injector.signer}, result => {
+            this.handleResult(result, handler)
+            if (result.status.isFinalized)
+                unsub()
         });
     }
 
@@ -144,35 +221,45 @@ export class API {
         });
     }
 
-    async refundDonation(projectName: string){
+    async refundDonation(projectName: string, handler: Handler<void>){
+        const outcome = await this.contract.query.refundDonation(
+            this.originAddress,
+            this.options,
+            projectName
+        )
+
+        getResult<void>(outcome)
+
         const injector = await web3FromAddress(this.originAddress);
 
         const unsub = await this.contract.tx.refundDonation(
             this.options,
             projectName,
-        ).signAndSend(this.originAddress, {signer: injector.signer}, (result) => {
-            if (result.status.isInBlock) {
-                console.log(`Transaction included at blockHash ${result.status.asInBlock}`);
-            } else if (result.status.isFinalized) {
-                console.log(`Transaction finalized at blockHash ${result.status.asFinalized}`);
-                unsub();
-            }
+        ).signAndSend(this.originAddress, {signer: injector.signer}, result => {
+            this.handleResult(result, handler)
+            if (result.status.isFinalized)
+                unsub()
         });
     }
 
-    async claimBudget(projectName: string){
+    async claimBudget(projectName: string, handler: Handler<void>){
+        const outcome = await this.contract.query.claimBudget(
+            this.originAddress,
+            this.options,
+            projectName
+        )
+
+        getResult<void>(outcome)
+
         const injector = await web3FromAddress(this.originAddress);
 
         const unsub = await this.contract.tx.claimBudget(
             this.options,
             projectName,
-        ).signAndSend(this.originAddress, {signer: injector.signer}, (result) => {
-            if (result.status.isInBlock) {
-                console.log(`Transaction included at blockHash ${result.status.asInBlock}`);
-            } else if (result.status.isFinalized) {
-                console.log(`Transaction finalized at blockHash ${result.status.asFinalized}`);
-                unsub();
-            }
+        ).signAndSend(this.originAddress, {signer: injector.signer}, result => {
+            this.handleResult(result, handler)
+            if (result.status.isFinalized)
+                unsub()
         });
     }
 }
