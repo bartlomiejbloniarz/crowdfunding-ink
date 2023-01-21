@@ -100,14 +100,6 @@ mod crowdfund {
         }
 
         #[ink(message)]
-        pub fn get_collected_budget(&self, project_name: String) -> Result<u128, Error> {
-            match self.budgets.get(project_name) {
-                Some(value) => Result::Ok(value),
-                None => Err(Error::ProjectDoesntExist),
-            }
-        }
-
-        #[ink(message)]
         pub fn get_project_info(&self, project_name: String) -> Result<ProjectInfo, Error> {
             match self.projects.get(project_name) {
                 Some(value) => Ok(value),
@@ -116,8 +108,16 @@ mod crowdfund {
         }
 
         #[ink(message)]
+        pub fn get_collected_budget(&self, project_name: String) -> Result<u128, Error> {
+            match self.budgets.get(project_name) {
+                Some(value) => Result::Ok(value),
+                None => Err(Error::ProjectDoesntExist),
+            }
+        }
+
+        #[ink(message)]
         pub fn get_donated_amount(&self, project_name: String, account: AccountId) -> Result<u128, Error> {
-            if !self.projects.contains(&project_name) {
+            if !self.projects.contains(project_name.clone()) {
                 return Err(Error::ProjectDoesntExist);
             }
 
@@ -137,7 +137,7 @@ mod crowdfund {
 
         #[ink(message)]
         pub fn get_vote(&self, project_name: String, account: AccountId) -> Result<bool, Error> {
-            if !self.projects.contains(&project_name) {
+            if !self.projects.contains(project_name.clone()) {
                 return Err(Error::ProjectDoesntExist);
             }
 
