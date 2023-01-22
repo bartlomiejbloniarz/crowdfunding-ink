@@ -231,6 +231,17 @@ export class API {
         goal: number,
         handler: Handler<void>
     ) {
+        const outcome = await this.contract.query.createProject(
+            this.originAccount.account.address,
+            this.options,
+            projectName,
+            description,
+            Date.parse(deadline),
+            goal
+        )
+
+        getResult<void>(outcome)
+
         const tx = this.contract.tx.createProject(
             this.options,
             projectName,
