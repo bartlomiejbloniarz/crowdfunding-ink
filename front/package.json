@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "prettier": {
-    "tabWidth": 4
+    "tabWidth": 4,
+    "semi": false
   },
   "dependencies": {
     "@cloudscape-design/components": "^3.0.170",

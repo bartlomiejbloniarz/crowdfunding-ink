@@ -1,5 +1,5 @@
-import React from "react";
-import { AppLayout, Header } from "@cloudscape-design/components";
+import React from "react"
+import { AppLayout, Header } from "@cloudscape-design/components"
 
 const NoPage = () => {
     return (
@@ -8,7 +8,7 @@ const NoPage = () => {
             navigationHide={true}
             contentHeader={<Header variant={"h1"}>404 Page not found</Header>}
         />
-    );
-};
+    )
+}
 
 export default NoPage

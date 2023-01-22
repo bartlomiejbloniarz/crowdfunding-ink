@@ -1,5 +1,5 @@
-import * as React from "react";
-import Modal from "@cloudscape-design/components/modal";
+import * as React from "react"
+import Modal from "@cloudscape-design/components/modal"
 import {
     Box,
     Button,
@@ -11,34 +11,34 @@ import {
     SpaceBetween,
     Textarea,
     TimeInput,
-} from "@cloudscape-design/components";
-import { useApi, useFlashbar } from "../App";
-import { useState } from "react";
-import { OptionDefinition } from "@cloudscape-design/components/internal/components/option/interfaces";
+} from "@cloudscape-design/components"
+import { useApi, useFlashbar } from "../App"
+import { useState } from "react"
+import { OptionDefinition } from "@cloudscape-design/components/internal/components/option/interfaces"
 
 const CreateForm = (props: { visible: boolean; dismiss: () => void }) => {
-    const [name, setName] = React.useState("");
-    const [goal, setGoal] = React.useState("");
-    const [description, setDescription] = React.useState("");
-    const [date, setDate] = React.useState("");
-    const [time, setTime] = React.useState("");
+    const [name, setName] = React.useState("")
+    const [goal, setGoal] = React.useState("")
+    const [description, setDescription] = React.useState("")
+    const [date, setDate] = React.useState("")
+    const [time, setTime] = React.useState("")
     const [selectedOption, setSelectedOption] = useState<OptionDefinition>({
         label: "pTZERO",
         value: "0",
-    });
+    })
 
-    const api = useApi();
+    const api = useApi()
 
-    const { flashbar, addError } = useFlashbar();
+    const { flashbar, addError } = useFlashbar()
 
     const submit = async () => {
-        const value = Number(goal) * 10 ** Number(selectedOption.value);
-        if (isNaN(value)) addError("Not a number");
+        const value = Number(goal) * 10 ** Number(selectedOption.value)
+        if (isNaN(value)) addError("Not a number")
         else
             api.createProject(name, description, date + " " + time, value)
                 .then(props.dismiss)
-                .catch(addError);
-    };
+                .catch(addError)
+    }
 
     return (
         <Modal
@@ -114,7 +114,7 @@ const CreateForm = (props: { visible: boolean; dismiss: () => void }) => {
                             <Select
                                 selectedOption={selectedOption}
                                 onChange={({ detail }) => {
-                                    setSelectedOption(detail.selectedOption);
+                                    setSelectedOption(detail.selectedOption)
                                 }}
                                 options={[
                                     { label: "TZERO", value: "12" },
@@ -129,7 +129,7 @@ const CreateForm = (props: { visible: boolean; dismiss: () => void }) => {
                 </SpaceBetween>
             </Form>
         </Modal>
-    );
-};
+    )
+}
 
-export default CreateForm;
+export default CreateForm
