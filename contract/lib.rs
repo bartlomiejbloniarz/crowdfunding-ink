@@ -55,9 +55,11 @@ mod crowdfund {
         projects: Mapping<String, ProjectInfo>,         // project --> static info about it
         budgets: Mapping<String, u128>,                 // project --> overall collected budget
         voting_state: Mapping<String, ProjectVotes>,    // project --> voting state
+        claimed: Mapping<String, bool>,                 // project --> author claimed funds
         // Mappings from (project, account) to ...
         donations: Mapping<(String, AccountId), u128>,  // project, account --> donated amount
         votes: Mapping<(String, AccountId), bool>,      // project, account --> has voted
+        refunded: Mapping<(String, AccountId), bool>,   // project, account --> account refunded donation to project
     }
 
     use ink_lang::utils::initialize_contract;
@@ -95,7 +97,8 @@ mod crowdfund {
             // Initialize the project in storage.
             self.projects.insert(project_name.clone(), &info);
             self.budgets.insert(project_name.clone(), &0);
-            self.voting_state.insert(project_name, &voting_state);
+            self.voting_state.insert(project_name.clone(), &voting_state);
+            self.claimed.insert(project_name, &false);
             Ok(())
         }
 
@@ -116,6 +119,22 @@ mod crowdfund {
         }
 
         #[ink(message)]
+        pub fn get_voting_state(&self, project_name: String) -> Result<ProjectVotes, Error> {
+            match self.voting_state.get(project_name) {
+                Some(value) => Ok(value),
+                None => Err(Error::ProjectDoesntExist),
+            }
+        }
+
+        #[ink(message)]
+        pub fn get_author_claimed(&self, project_name: String) -> Result<bool, Error> {
+            match self.claimed.get(project_name) {
+                Some(value) => Result::Ok(value),
+                None => Err(Error::ProjectDoesntExist),
+            }
+        }
+
+        #[ink(message)]
         pub fn get_donated_amount(&self, project_name: String, account: AccountId) -> Result<u128, Error> {
             if !self.projects.contains(project_name.clone()) {
                 return Err(Error::ProjectDoesntExist);
@@ -128,14 +147,6 @@ mod crowdfund {
         }
 
         #[ink(message)]
-        pub fn get_voting_state(&self, project_name: String) -> Result<ProjectVotes, Error> {
-            match self.voting_state.get(project_name) {
-                Some(value) => Ok(value),
-                None => Err(Error::ProjectDoesntExist),
-            }
-        }
-
-        #[ink(message)]
         pub fn get_vote(&self, project_name: String, account: AccountId) -> Result<bool, Error> {
             if !self.projects.contains(project_name.clone()) {
                 return Err(Error::ProjectDoesntExist);
@@ -145,6 +156,18 @@ mod crowdfund {
                 Some(value) => Ok(value),
                 None => Err(Error::NoSuchVote),
             }
+        }
+
+        #[ink(message)]
+        pub fn get_donor_refunded(&self, project_name: String, account: AccountId) -> Result<bool, Error> {
+            if !self.projects.contains(project_name.clone()) {
+                return Err(Error::ProjectDoesntExist);
+            }
+
+            Result::Ok(match self.refunded.get((project_name, account)) {
+                Some(value) => value,
+                None => false,
+            })
         }
 
         #[ink(message, payable)]
@@ -261,14 +284,14 @@ mod crowdfund {
             }
 
             let donor = self.env().caller();
-            let donated = match self.get_donated_amount(project_name.clone(), donor) {
-                Ok(value) => value,
-                Err(error) => return Err(error),
-            };
 
-            // No need to perform a 0 transaction.
-            if donated <= 0 {
-                return Err(Error::NoFundsToRefund);
+            // Verify if already refunded it.
+            match self.get_donor_refunded(project_name.clone(), donor) {
+                Ok(value) => match value {
+                    true => return Err(Error::NoFundsToRefund),
+                    false => (),
+                },
+                Err(error) => return Err(error),
             }
 
             let budget = match self.get_collected_budget(project_name.clone()) {
@@ -294,12 +317,17 @@ mod crowdfund {
                 }
             }
 
-            // All conditions to make a refund were met.
+            // All conditions to make a refund are met.
 
-            // Truncate the donated amount to 0. This ensures that no donor will refund their funds twice.
-            self.donations.insert((project_name.clone(), donor), &0);
+            // Make note of the refund
+            self.refunded.insert((project_name.clone(), donor), &true);
 
             // Transfer the refund.
+            let donated = match self.get_donated_amount(project_name.clone(), donor) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
             match self.env().transfer(donor, donated) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(Error::TransferFailed)
@@ -332,15 +360,19 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
-            // No need to perform a 0 transaction.
-            if budget <= 0 {
-                return Err(Error::NoFundsToClaim);
-            }
-
             // The campaign can be successful only if the goal was reached.
             if budget < info.goal {
                 return Err(Error::GoalNotReached);
             }
+
+            // Verify if already claimed.
+            match self.get_author_claimed(project_name.clone()) {
+                Ok(value) => match value {
+                    true => return Err(Error::NoFundsToClaim),
+                    false => (),
+                },
+                Err(error) => return Err(error),
+            };
 
             let voting_state = match self.get_voting_state(project_name.clone()) {
                 Ok(value) => value,
@@ -360,8 +392,8 @@ mod crowdfund {
                 return Err(Error::CampaingResultUnknown);
             }
 
-            // Truncate the budget to 0. This ensures that no author will claim their funds twice.
-            self.budgets.insert(project_name, &0);
+            // Make note of the claim.
+            self.claimed.insert(project_name, &true);
 
             // Transfer the claim.
             match self.env().transfer(author, budget) {
@@ -376,8 +408,12 @@ mod crowdfund {
 #[cfg(test)]
 mod tests {
 
+    use crate::crowdfund::Error;
     use crate::crowdfund::ProjectInfo;
+    use crate::crowdfund::ProjectVotes;
     use crate::crowdfund::Crowdfund;
+
+    use ink_env::block_timestamp;
     use ink_env::{test::{self}, DefaultEnvironment};
     use ink_lang as ink;
 
@@ -420,8 +456,8 @@ mod tests {
         let accs = test::default_accounts::<DefaultEnvironment>();
         test::set_caller::<DefaultEnvironment>(accs.alice);
         let mut contract = Crowdfund::new();
-
         contract.create_project(String::from("Doll"), String::from("I want a doll."), 1000, 500).ok();
+
         test::set_caller::<DefaultEnvironment>(accs.bob);
         contract.create_project(String::from("Toy car"), String::from("I want a toy car."), 1200, 600).ok();
 
@@ -442,5 +478,149 @@ mod tests {
         assert_eq!(contract.get_collected_budget(String::from("Toy car")), Ok(450));
     }
 
-    // TODO - tests for claiming and refunding when we decide the exact rules.
+    #[ink::test]
+    fn test_goal_not_reached() {
+        let accs = test::default_accounts::<DefaultEnvironment>();
+        test::set_caller::<DefaultEnvironment>(accs.alice);
+        let mut contract = Crowdfund::new();
+        contract.create_project(String::from("Doll"), String::from("I want a doll."), 5, 1000).ok(); // deadline = 5
+
+        test::set_caller::<DefaultEnvironment>(accs.bob);
+        test::set_value_transferred::<DefaultEnvironment>(350);
+        contract.make_donation(String::from("Doll")).ok();
+
+        // advance blocks until the deadline passes
+        loop {
+            let t = block_timestamp::<DefaultEnvironment>();
+            if t >= 5 {
+                break;
+            }
+            test::advance_block::<DefaultEnvironment>();
+        }
+
+        test::set_caller::<DefaultEnvironment>(accs.alice);
+        assert_eq!(contract.claim_budget(String::from("Doll")), Err(Error::GoalNotReached));
+
+        test::set_caller::<DefaultEnvironment>(accs.bob);
+        assert_eq!(contract.refund_donation(String::from("Doll")), Ok(()));
+        assert_eq!(contract.get_donor_refunded(String::from("Doll"), accs.bob), Ok(true));
+        assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::NoFundsToRefund));
+    }
+
+    macro_rules! voting_tests {
+        ($($name:ident: $value:expr,)*) => {
+        $(
+            #[ink::test]
+            fn $name() {
+                let campaign_success = $value;
+                let accs = test::default_accounts::<DefaultEnvironment>();
+                test::set_caller::<DefaultEnvironment>(accs.alice);
+                let mut contract = Crowdfund::new();
+                contract.create_project(String::from("Doll"), String::from("I want a doll."), 5, 1000).ok(); // deadline = 5
+
+                test::set_caller::<DefaultEnvironment>(accs.bob);
+                test::set_value_transferred::<DefaultEnvironment>(499); // donate 499
+                contract.make_donation(String::from("Doll")).ok();
+
+                test::set_caller::<DefaultEnvironment>(accs.charlie);
+                test::set_value_transferred::<DefaultEnvironment>(500); // donate 500
+                contract.make_donation(String::from("Doll")).ok();
+
+                test::set_caller::<DefaultEnvironment>(accs.django);
+                test::set_value_transferred::<DefaultEnvironment>(1);   // donate 1
+                contract.make_donation(String::from("Doll")).ok();
+
+                assert_eq!(contract.get_collected_budget(String::from("Doll")), Ok(1000));
+
+                // advance blocks until the deadline passes
+                loop {
+                    let t = block_timestamp::<DefaultEnvironment>();
+                    if t >= 5 {
+                        break;
+                    }
+                    test::advance_block::<DefaultEnvironment>();
+                }
+
+                // partial voting
+                test::set_caller::<DefaultEnvironment>(accs.bob);
+                contract.make_vote(String::from("Doll"), false).ok();
+
+                test::set_caller::<DefaultEnvironment>(accs.charlie);
+                contract.make_vote(String::from("Doll"), true).ok();
+                
+                // campaign result still ambiguous, django's vote will be deciding
+                test::set_caller::<DefaultEnvironment>(accs.alice);
+                assert_eq!(contract.claim_budget(String::from("Doll")), Err(Error::CampaingResultUnknown));
+
+                test::set_caller::<DefaultEnvironment>(accs.bob);
+                assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::CampaingResultUnknown));
+
+                test::set_caller::<DefaultEnvironment>(accs.charlie);
+                assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::CampaingResultUnknown));
+
+                test::set_caller::<DefaultEnvironment>(accs.django);
+                assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::CampaingResultUnknown));
+
+                // django decides
+                test::set_caller::<DefaultEnvironment>(accs.django);
+                contract.make_vote(String::from("Doll"), campaign_success).ok();
+
+                test::set_caller::<DefaultEnvironment>(accs.charlie);
+                assert_eq!(contract.claim_budget(String::from("Doll")), Err(Error::YouAreNotTheFather));
+
+                if campaign_success { // django decided YES
+                    assert_eq!(contract.get_voting_state(String::from("Doll")), Ok(ProjectVotes {
+                        ovr_voted_yes: 501,
+                        ovr_voted_no: 499,
+                    }));
+
+                    test::set_caller::<DefaultEnvironment>(accs.alice);
+                    assert_eq!(contract.get_author_claimed(String::from("Doll")), Ok(false));
+                    assert_eq!(contract.claim_budget(String::from("Doll")), Ok(()));
+
+                    test::set_caller::<DefaultEnvironment>(accs.bob);
+                    assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::CampaignSuccessfulNoRefunds));
+
+                    test::set_caller::<DefaultEnvironment>(accs.charlie);
+                    assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::CampaignSuccessfulNoRefunds));
+
+                    test::set_caller::<DefaultEnvironment>(accs.django);
+                    assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::CampaignSuccessfulNoRefunds));
+
+                    test::set_caller::<DefaultEnvironment>(accs.alice);
+                    assert_eq!(contract.get_author_claimed(String::from("Doll")), Ok(true));
+                    assert_eq!(contract.claim_budget(String::from("Doll")), Err(Error::NoFundsToClaim));
+                }
+                else { // django decided NO
+                    assert_eq!(contract.get_voting_state(String::from("Doll")), Ok(ProjectVotes {
+                        ovr_voted_yes: 500,
+                        ovr_voted_no: 500,
+                    }));
+
+                    test::set_caller::<DefaultEnvironment>(accs.alice);
+                    assert_eq!(contract.claim_budget(String::from("Doll")), Err(Error::CampaignUnsuccessfulNoClaims));
+
+                    test::set_caller::<DefaultEnvironment>(accs.bob);
+                    assert_eq!(contract.get_donor_refunded((String::from("Doll")), accs.bob), Ok(false));
+                    assert_eq!(contract.refund_donation(String::from("Doll")), Ok(()));
+
+                    test::set_caller::<DefaultEnvironment>(accs.charlie);
+                    assert_eq!(contract.refund_donation(String::from("Doll")), Ok(()));
+
+                    test::set_caller::<DefaultEnvironment>(accs.django);
+                    assert_eq!(contract.refund_donation(String::from("Doll")), Ok(()));
+
+                    test::set_caller::<DefaultEnvironment>(accs.bob);
+                    assert_eq!(contract.get_donor_refunded((String::from("Doll")), accs.bob), Ok(true));
+                    assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::NoFundsToRefund));
+                }
+            }
+        )*
+        }
+    }
+
+    voting_tests! {
+        test_campaign_successful: true,
+        test_campaign_unsuccessful: false,
+    }
 }
