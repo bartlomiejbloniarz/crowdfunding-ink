@@ -23,6 +23,7 @@ mod crowdfund {
         DeadlineNotPassedYet,
         DeadlinePassed,
         GoalNotReached,
+        IncorrectFeePercentage,
         NoFundsDontatedNoVote,
         NoFundsToClaim,
         NoFundsToRefund,
@@ -68,6 +69,8 @@ mod crowdfund {
         // length of voting in milliseconds
         // global for every project
         voting_length: u64,
+        fee_percent: i8,
+        owner_account: AccountId,
         // Mappings from (project) to ...
         projects: Mapping<String, ProjectInfo>, // project --> static info about it
         budgets: Mapping<String, u128>,         // project --> overall collected budget
@@ -84,8 +87,15 @@ mod crowdfund {
     use ink_lang::utils::initialize_contract;
     impl Crowdfund {
         #[ink(constructor)]
-        pub fn new(voting_length: u64) -> Self {
-            initialize_contract(|contract: &mut Self| contract.voting_length = voting_length)
+        pub fn new(voting_length: u64, fee_percent: i8, owner_account: AccountId) -> Self {
+            if fee_percent > 100 {
+                panic!("Fee percent cannot exceed 100!")
+            }
+            initialize_contract(|contract: &mut Self| {
+                contract.voting_length = voting_length;
+                contract.fee_percent = fee_percent;
+                contract.owner_account = owner_account;
+            })
         }
 
         #[ink(message)]
@@ -455,8 +465,16 @@ mod crowdfund {
             // Make note of the claim.
             self.claimed.insert(project_name, &true);
 
+            // calculate and transfer fee
+            let fee = budget * self.fee_percent as u128 / 100;
+
+            match self.env().transfer(self.owner_account, fee) {
+                Ok(_) => (),
+                Err(_) => return Err(Error::TransferFailed),
+            }
+
             // Transfer the claim.
-            match self.env().transfer(author, budget) {
+            match self.env().transfer(author, budget - fee) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(Error::TransferFailed),
             }
@@ -480,7 +498,7 @@ mod tests {
     fn test_create_project() {
         let accs = test::default_accounts::<DefaultEnvironment>();
         test::set_caller::<DefaultEnvironment>(accs.alice);
-        let mut contract = Crowdfund::new(100);
+        let mut contract = Crowdfund::new(3, 0, accs.alice);
 
         contract
             .create_project(String::from("Doll"), String::from("I want a doll."), 5, 10)
@@ -528,7 +546,7 @@ mod tests {
     fn test_donation_balances() {
         let accs = test::default_accounts::<DefaultEnvironment>();
         test::set_caller::<DefaultEnvironment>(accs.alice);
-        let mut contract = Crowdfund::new(100);
+        let mut contract = Crowdfund::new(3, 0, accs.alice);
         contract
             .create_project(
                 String::from("Doll"),
@@ -584,7 +602,7 @@ mod tests {
     fn test_goal_not_reached() {
         let accs = test::default_accounts::<DefaultEnvironment>();
         test::set_caller::<DefaultEnvironment>(accs.alice);
-        let mut contract = Crowdfund::new(100);
+        let mut contract = Crowdfund::new(3, 0, accs.alice);
         contract
             .create_project(
                 String::from("Doll"),
@@ -632,7 +650,7 @@ mod tests {
             fn $name() {
                 let accs = test::default_accounts::<DefaultEnvironment>();
                 test::set_caller::<DefaultEnvironment>(accs.alice);
-                let mut contract = Crowdfund::new(100);
+                let mut contract = Crowdfund::new(3, 0, accs.alice);
                 contract.create_project(String::from("Doll"), String::from("I want a doll."), 5, 1000).ok(); // deadline = 5
 
                 test::set_caller::<DefaultEnvironment>(accs.bob);
@@ -692,7 +710,7 @@ mod tests {
                         // advance voting past deadline so that it can be decided
                         loop {
                             let t = block_timestamp::<DefaultEnvironment>();
-                            if t >= 106 {
+                            if t >= 9 {
                                 break;
                             }
                             test::advance_block::<DefaultEnvironment>();
