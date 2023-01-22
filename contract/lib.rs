@@ -7,12 +7,7 @@ mod crowdfund {
     use ink_prelude::{string::String, vec::Vec};
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
-    #[derive(
-        ink_storage::traits::PackedLayout,
-        ink_storage::traits::SpreadLayout,
-        scale::Encode,
-        scale::Decode,
-    )]
+    #[derive(scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
     pub enum Error {
         AlreadyVoted,
