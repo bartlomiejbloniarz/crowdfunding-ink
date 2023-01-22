@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/crowdfunding-ink/static/css/main.21b712ad.css",
-    "main.js": "/crowdfunding-ink/static/js/main.8c873510.js",
+    "main.js": "/crowdfunding-ink/static/js/main.5c0c915c.js",
     "index.html": "/crowdfunding-ink/index.html",
     "main.21b712ad.css.map": "/crowdfunding-ink/static/css/main.21b712ad.css.map",
-    "main.8c873510.js.map": "/crowdfunding-ink/static/js/main.8c873510.js.map"
+    "main.5c0c915c.js.map": "/crowdfunding-ink/static/js/main.5c0c915c.js.map"
   },
   "entrypoints": [
     "static/css/main.21b712ad.css",
-    "static/js/main.8c873510.js"
+    "static/js/main.5c0c915c.js"
   ]
 }
