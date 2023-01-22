@@ -4,7 +4,7 @@ use ink_lang as ink;
 
 #[ink::contract]
 mod crowdfund {
-    use ink_prelude::string::String;
+    use ink_prelude::{string::String, vec::Vec};
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
     #[derive(ink_storage::traits::PackedLayout, ink_storage::traits::SpreadLayout, scale::Encode, scale::Decode)]
@@ -60,6 +60,8 @@ mod crowdfund {
         donations: Mapping<(String, AccountId), u128>,  // project, account --> donated amount
         votes: Mapping<(String, AccountId), bool>,      // project, account --> has voted
         refunded: Mapping<(String, AccountId), bool>,   // project, account --> account refunded donation to project
+        // All project names
+        project_names: Vec<String>,
     }
 
     use ink_lang::utils::initialize_contract;
@@ -98,7 +100,8 @@ mod crowdfund {
             self.projects.insert(project_name.clone(), &info);
             self.budgets.insert(project_name.clone(), &0);
             self.voting_state.insert(project_name.clone(), &voting_state);
-            self.claimed.insert(project_name, &false);
+            self.claimed.insert(project_name.clone(), &false);
+            self.project_names.push(project_name);
             Ok(())
         }
 
@@ -168,6 +171,11 @@ mod crowdfund {
                 Some(value) => value,
                 None => false,
             })
+        }
+
+        #[ink(message)]
+        pub fn get_all_projects(&self) -> Result<Vec<String>, Error> {
+            Ok(self.project_names.clone())
         }
 
         #[ink(message, payable)]
@@ -425,8 +433,11 @@ mod tests {
         let mut contract = Crowdfund::new();
 
         contract.create_project(String::from("Doll"), String::from("I want a doll."), 5, 10).ok();
+        assert_eq!(contract.get_all_projects(), Ok(vec![String::from("Doll")]));
+
         test::set_caller::<DefaultEnvironment>(accs.bob);
         contract.create_project(String::from("Toy car"), String::from("I want a toy car."), 6, 12).ok();
+        assert_eq!(contract.get_all_projects(), Ok(vec![String::from("Doll"), String::from("Toy car")]));
 
         assert_eq!(
             contract.get_project_info(String::from("Doll")),
