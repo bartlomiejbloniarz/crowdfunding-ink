@@ -31,11 +31,12 @@ function handleOutcome<T>(outcome: ContractCallOutcome, handler: Handler<T>) {
 }
 
 type Handler<T> = {
+    handleInfo: (str: string) => void
     handleOk: (t: T) => void
     handleErr: (str: string) => void
 }
 
-const contractAddress = "5EzqL1Dj9WZCmCir9VU2Py1z5nhM3RsCGy9ycudCUNNFGZ1c"
+const contractAddress = "5CggKY6ozvXFMpe8ZPnxgCsP18bL2VxQufXUKYJ2fFPfAZrY"
 
 export class API {
     private readonly api: ApiPromise
@@ -55,7 +56,14 @@ export class API {
     }
 
     private handleResult(result: ISubmittableResult, handler: Handler<void>) {
-        if (result.status.isFinalized) {
+        if (result.status.isInBlock) {
+            handler.handleInfo(
+                `Transaction included at blockHash ${result.status.asInBlock}`
+            )
+        } else if (result.status.isFinalized) {
+            handler.handleInfo(
+                `Transaction finalized at blockHash ${result.status.asFinalized}`
+            )
             if (result.dispatchError) {
                 if (result.dispatchError.isModule) {
                     const decoded = this.api.registry.findMetaError(
@@ -120,6 +128,15 @@ export class API {
         }
     }
 
+    async getAllProjects(): Promise<string[]> {
+        const outcome = await this.contract.query.getAllProjects(
+            this.originAddress,
+            this.options
+        )
+
+        return getResult(outcome)
+    }
+
     async getDonatedAmount(
         projectName: string,
         account: string
@@ -179,7 +196,8 @@ export class API {
         projectName: string,
         description: string,
         deadline: string,
-        goal: number
+        goal: number,
+        handler: Handler<void>
     ) {
         const injector = await web3FromAddress(this.originAddress)
 
@@ -195,16 +213,8 @@ export class API {
                 this.originAddress,
                 { signer: injector.signer },
                 (result) => {
-                    if (result.status.isInBlock) {
-                        console.log(
-                            `Transaction included at blockHash ${result.status.asInBlock}`
-                        )
-                    } else if (result.status.isFinalized) {
-                        console.log(
-                            `Transaction finalized at blockHash ${result.status.asFinalized}`
-                        )
-                        unsub()
-                    }
+                    this.handleResult(result, handler)
+                    if (result.status.isFinalized) unsub()
                 }
             )
     }

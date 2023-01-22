@@ -23,15 +23,7 @@ interface ItemType {
 
 const CardsView = () => {
     const [filteringText, setFilteringText] = useState("")
-    const [projects, setProjects] = useState([
-        "BB fund",
-        "BB fund 2",
-        "BB fund 3",
-        "BB fund 4",
-        "BB fund 5",
-        "BB fund 6",
-        "BB fund 7",
-    ])
+    const [projects, setProjects] = useState<string[]>([])
     const [items, setItems] = useState<ItemType[]>([])
     const [isFormVisible, setIsFormVisible] = useState(false)
     const [input, setInput] = useState("")
@@ -39,6 +31,10 @@ const CardsView = () => {
     const api = useApi()
 
     const { dependency, forceUpdate } = useForceUpdate()
+
+    useEffect(() => {
+        api.getAllProjects().then(setProjects)
+    }, [api, dependency])
 
     useEffect(() => {
         const getProjectsInfo = async () => {
@@ -62,7 +58,7 @@ const CardsView = () => {
             return res
         }
 
-        getProjectsInfo().then(setItems).catch(console.log)
+        getProjectsInfo().then(setItems).catch()
     }, [dependency, api, projects])
 
     return (
@@ -135,21 +131,6 @@ const CardsView = () => {
                     <Header
                         actions={
                             <SpaceBetween direction="horizontal" size="m">
-                                <Input
-                                    placeholder={"Import project by name"}
-                                    onKeyDown={(event) => {
-                                        if (event.detail.key === "Enter") {
-                                            setProjects((projects) =>
-                                                projects.concat(input)
-                                            )
-                                            setInput("")
-                                        }
-                                    }}
-                                    onChange={(event) => {
-                                        setInput(event.detail.value)
-                                    }}
-                                    value={input}
-                                />
                                 <Button
                                     variant="primary"
                                     onClick={() => setIsFormVisible(true)}

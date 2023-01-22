@@ -12,7 +12,7 @@ import {
     Textarea,
     TimeInput,
 } from "@cloudscape-design/components"
-import { useApi, useFlashbar } from "../App"
+import { useApi, useFlashbar, useForceUpdate } from "../App"
 import { useState } from "react"
 import { OptionDefinition } from "@cloudscape-design/components/internal/components/option/interfaces"
 
@@ -29,15 +29,21 @@ const CreateForm = (props: { visible: boolean; dismiss: () => void }) => {
 
     const api = useApi()
 
-    const { flashbar, addError } = useFlashbar()
+    const { flashbar, addError, addInfo } = useFlashbar()
+    const { dependency, forceUpdate } = useForceUpdate()
 
     const submit = async () => {
         const value = Number(goal) * 10 ** Number(selectedOption.value)
         if (isNaN(value)) addError("Not a number")
         else
-            api.createProject(name, description, date + " " + time, value)
-                .then(props.dismiss)
-                .catch(addError)
+            api.createProject(name, description, date + " " + time, value, {
+                handleOk: () => {
+                    addInfo("Project created!")
+                    forceUpdate()
+                },
+                handleInfo: addInfo,
+                handleErr: addError,
+            }).catch(addError)
     }
 
     return (

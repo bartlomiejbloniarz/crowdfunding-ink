@@ -40,7 +40,7 @@ const ProjectView = () => {
     const api = useApi()
     const originAddress = useOriginAddress()
     const accountSelector = useAccountSelector()
-    const { flashbar, addError } = useFlashbar()
+    const { flashbar, addError, addInfo } = useFlashbar()
     const accounts = useAccounts()
 
     const { dependency, forceUpdate } = useForceUpdate()
@@ -190,6 +190,7 @@ const ProjectView = () => {
                                 value={input}
                             />
                             <ButtonDropdown
+                                disabled={input === ""}
                                 onItemClick={(event) => {
                                     const value =
                                         Number(input) *
@@ -200,6 +201,7 @@ const ProjectView = () => {
                                         api.makeDonation(projectName!, value, {
                                             handleOk: forceUpdate,
                                             handleErr: addError,
+                                            handleInfo: addInfo,
                                         }).catch(addError)
                                     }
                                 }}
@@ -260,6 +262,7 @@ const ProjectView = () => {
                                                             handleOk:
                                                                 forceUpdate,
                                                             handleErr: addError,
+                                                            handleInfo: addInfo,
                                                         }
                                                     )
                                                     .catch(addError)
@@ -282,6 +285,7 @@ const ProjectView = () => {
                                                                     "OK"
                                                                 ),
                                                             handleErr: addError,
+                                                            handleInfo: addInfo,
                                                         }
                                                     )
                                                     .catch(addError)
@@ -297,6 +301,7 @@ const ProjectView = () => {
                                                         handleOk: () =>
                                                             console.log("OK"),
                                                         handleErr: addError,
+                                                        handleInfo: addInfo,
                                                     })
                                                     .catch(addError)
                                             }
