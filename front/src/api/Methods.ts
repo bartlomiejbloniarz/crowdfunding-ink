@@ -2,10 +2,12 @@ import { ProjectInfo, ProjectInfoResponse, ProjectVotes, Result } from "./Types"
 import { ContractPromise } from "@polkadot/api-contract"
 import type { WeightV2 } from "@polkadot/types/interfaces"
 import { web3FromAddress } from "@polkadot/extension-dapp"
-import { ApiPromise } from "@polkadot/api"
+import { ApiPromise, Keyring } from "@polkadot/api"
 import metadata from "../resources/metadata.json"
 import { ContractCallOutcome } from "@polkadot/api-contract/types"
 import { ISubmittableResult } from "@polkadot/types/types/extrinsic"
+import { Account } from "../App"
+import { SubmittableExtrinsic } from "@polkadot/api/promise/types"
 
 function getResult<T>(outcome: ContractCallOutcome): T {
     if (outcome.result.isOk) {
@@ -41,18 +43,20 @@ const contractAddress = "5CggKY6ozvXFMpe8ZPnxgCsP18bL2VxQufXUKYJ2fFPfAZrY"
 export class API {
     private readonly api: ApiPromise
     private readonly contract: ContractPromise
-    private readonly originAddress: string
+    private readonly originAccount: Account
     private readonly options: { gasLimit: WeightV2; storageDepositLimit: null }
-
+    private readonly keyring: Keyring
     constructor(
         api: ApiPromise,
-        origin: string,
-        options: { gasLimit: WeightV2; storageDepositLimit: null }
+        origin: Account,
+        options: { gasLimit: WeightV2; storageDepositLimit: null },
+        keyring: Keyring
     ) {
         this.api = api
         this.contract = new ContractPromise(api, metadata, contractAddress)
-        this.originAddress = origin
+        this.originAccount = origin
         this.options = options
+        this.keyring = keyring
     }
 
     private handleResult(result: ISubmittableResult, handler: Handler<void>) {
@@ -81,14 +85,16 @@ export class API {
     }
 
     async getAccountBalance(): Promise<number> {
-        const result = await this.api.query.system.account(this.originAddress)
+        const result = await this.api.query.system.account(
+            this.originAccount.account.address
+        )
         const x = result.toJSON() as { data: { free: string } }
         return Number(x.data.free)
     }
 
     async getCollectedBudget(projectName: string): Promise<number> {
         const outcome = await this.contract.query.getCollectedBudget(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName
         )
@@ -101,7 +107,7 @@ export class API {
             contractAddress,
             async () => {
                 const outcome = await this.contract.query.getCollectedBudget(
-                    this.originAddress,
+                    this.originAccount.account.address,
                     this.options,
                     projectName
                 )
@@ -113,7 +119,7 @@ export class API {
 
     async getProjectInfo(projectName: string): Promise<ProjectInfo> {
         const outcome = await this.contract.query.getProjectInfo(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName
         )
@@ -130,7 +136,7 @@ export class API {
 
     async getAllProjects(): Promise<string[]> {
         const outcome = await this.contract.query.getAllProjects(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options
         )
 
@@ -142,7 +148,7 @@ export class API {
         account: string
     ): Promise<number> {
         const outcome = await this.contract.query.getDonatedAmount(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName,
             account
@@ -160,7 +166,7 @@ export class API {
             contractAddress,
             async () => {
                 const outcome = await this.contract.query.getDonatedAmount(
-                    this.originAddress,
+                    this.originAccount.account.address,
                     this.options,
                     projectName,
                     account
@@ -173,7 +179,7 @@ export class API {
 
     async getVotingState(projectName: string): Promise<ProjectVotes> {
         const outcome = await this.contract.query.getVotingState(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName
         )
@@ -183,13 +189,39 @@ export class API {
 
     async getVote(projectName: string, account: string): Promise<boolean> {
         const outcome = await this.contract.query.getVote(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName,
             account
         )
 
         return getResult(outcome)
+    }
+
+    async signAndSend(tx: SubmittableExtrinsic, handler: Handler<void>) {
+        if (this.originAccount.type === "injected") {
+            const injector = await web3FromAddress(
+                this.originAccount.account.address
+            )
+
+            const unsub = await tx.signAndSend(
+                this.originAccount.account.address,
+                { signer: injector.signer },
+                (result) => {
+                    this.handleResult(result, handler)
+                    if (result.status.isFinalized) unsub()
+                }
+            )
+        } else {
+            const pair = this.keyring.getPair(
+                this.originAccount.account.address
+            )
+
+            const unsub = await tx.signAndSend(pair, (result) => {
+                this.handleResult(result, handler)
+                if (result.status.isFinalized) unsub()
+            })
+        }
     }
 
     async createProject(
@@ -199,24 +231,15 @@ export class API {
         goal: number,
         handler: Handler<void>
     ) {
-        const injector = await web3FromAddress(this.originAddress)
+        const tx = this.contract.tx.createProject(
+            this.options,
+            projectName,
+            description,
+            Date.parse(deadline),
+            goal
+        )
 
-        const unsub = await this.contract.tx
-            .createProject(
-                this.options,
-                projectName,
-                description,
-                Date.parse(deadline),
-                goal
-            )
-            .signAndSend(
-                this.originAddress,
-                { signer: injector.signer },
-                (result) => {
-                    this.handleResult(result, handler)
-                    if (result.status.isFinalized) unsub()
-                }
-            )
+        await this.signAndSend(tx, handler)
     }
 
     async makeDonation(
@@ -225,30 +248,24 @@ export class API {
         handler: Handler<void>
     ) {
         const outcome = await this.contract.query.makeDonation(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName
         )
 
         getResult<void>(outcome)
 
-        const injector = await web3FromAddress(this.originAddress)
+        const tx = this.contract.tx.makeDonation(
+            { ...this.options, value },
+            projectName
+        )
 
-        const unsub = await this.contract.tx
-            .makeDonation({ ...this.options, value }, projectName)
-            .signAndSend(
-                this.originAddress,
-                { signer: injector.signer },
-                (result) => {
-                    this.handleResult(result, handler)
-                    if (result.status.isFinalized) unsub()
-                }
-            )
+        await this.signAndSend(tx, handler)
     }
 
     async makeVote(projectName: string, vote: boolean, handler: Handler<void>) {
         const outcome = await this.contract.query.makeVote(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName,
             vote
@@ -256,63 +273,36 @@ export class API {
 
         getResult<void>(outcome)
 
-        const injector = await web3FromAddress(this.originAddress)
+        const tx = this.contract.tx.makeVote(this.options, projectName, vote)
 
-        const unsub = await this.contract.tx
-            .makeVote(this.options, projectName, vote)
-            .signAndSend(
-                this.originAddress,
-                { signer: injector.signer },
-                (result) => {
-                    this.handleResult(result, handler)
-                    if (result.status.isFinalized) unsub()
-                }
-            )
+        await this.signAndSend(tx, handler)
     }
 
     async refundDonation(projectName: string, handler: Handler<void>) {
         const outcome = await this.contract.query.refundDonation(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName
         )
 
         getResult<void>(outcome)
 
-        const injector = await web3FromAddress(this.originAddress)
+        const tx = this.contract.tx.refundDonation(this.options, projectName)
 
-        const unsub = await this.contract.tx
-            .refundDonation(this.options, projectName)
-            .signAndSend(
-                this.originAddress,
-                { signer: injector.signer },
-                (result) => {
-                    this.handleResult(result, handler)
-                    if (result.status.isFinalized) unsub()
-                }
-            )
+        await this.signAndSend(tx, handler)
     }
 
     async claimBudget(projectName: string, handler: Handler<void>) {
         const outcome = await this.contract.query.claimBudget(
-            this.originAddress,
+            this.originAccount.account.address,
             this.options,
             projectName
         )
 
         getResult<void>(outcome)
 
-        const injector = await web3FromAddress(this.originAddress)
+        const tx = this.contract.tx.claimBudget(this.options, projectName)
 
-        const unsub = await this.contract.tx
-            .claimBudget(this.options, projectName)
-            .signAndSend(
-                this.originAddress,
-                { signer: injector.signer },
-                (result) => {
-                    this.handleResult(result, handler)
-                    if (result.status.isFinalized) unsub()
-                }
-            )
+        await this.signAndSend(tx, handler)
     }
 }

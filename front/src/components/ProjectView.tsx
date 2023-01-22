@@ -61,7 +61,7 @@ const ProjectView = () => {
     }, [dependency, api, projectName, originAddress])
 
     const account = accounts.find(
-        (account) => account.address === projectInfo?.author
+        (account) => account.account.address === projectInfo?.author
     )
 
     const content = projectInfo ? (
@@ -83,7 +83,7 @@ const ProjectView = () => {
                     <div>
                         <Box variant="awsui-key-label">Author</Box>
                         <div>{`${projectInfo.author}${
-                            account ? ` (${account.meta.name})` : ""
+                            account ? ` (${account.account.meta.name})` : ""
                         }`}</div>
                     </div>
                 </SpaceBetween>
@@ -118,6 +118,7 @@ const ProjectView = () => {
                                 {
                                     title: "Yes",
                                     type: "bar",
+                                    color: "#018977",
                                     valueFormatter: (e) =>
                                         `${((100 * e) / raised).toFixed(0)}%`,
                                     data: [
@@ -127,6 +128,7 @@ const ProjectView = () => {
                                 {
                                     title: "No",
                                     type: "bar",
+                                    color: "#e07f9d",
                                     valueFormatter: (e) =>
                                         `${((100 * e) / raised).toFixed(0)}%`,
                                     data: [{ x: "Votes", y: votes.ovrVotedNo }],
@@ -134,6 +136,7 @@ const ProjectView = () => {
                                 {
                                     title: "Hasn't voted yet",
                                     type: "bar",
+                                    color: "#486DE8",
                                     valueFormatter: (e) =>
                                         `${((100 * e) / raised).toFixed(0)}%`,
                                     data: [

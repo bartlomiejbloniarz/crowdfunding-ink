@@ -22,7 +22,8 @@ import { HashRouter, Route, Routes } from "react-router-dom"
 import MainPage from "./components/MainPage"
 import ProjectView from "./components/ProjectView"
 import NoPage from "./components/NoPage"
-import { ApiPromise, WsProvider } from "@polkadot/api"
+import { ApiPromise, Keyring, WsProvider } from "@polkadot/api"
+import { KeyringPair } from "@polkadot/keyring/types"
 import { InjectedAccountWithMeta } from "@polkadot/extension-inject/types"
 import { web3Accounts, web3Enable } from "@polkadot/extension-dapp"
 import { WeightV2 } from "@polkadot/types/interfaces"
@@ -31,7 +32,7 @@ import { API } from "./api/Methods"
 import { formatCurrency } from "./utils/Utils"
 
 const ApiContext = createContext<API | null>(null)
-const AccountsContext = createContext<InjectedAccountWithMeta[]>([])
+const AccountsContext = createContext<Account[]>([])
 const OriginAddressContext = createContext<string | null>(null)
 const AccountContext = createContext<React.ReactNode | null>(null)
 const ForceUpdateContext = createContext<{
@@ -65,7 +66,7 @@ export const useFlashbar = () => {
 
     const addItem =
         (header?: React.ReactNode, type?: FlashbarProps.Type) =>
-        (content: React.ReactNode) => {
+        (content: object | string) => {
             return setItems((items) => {
                 const id = counter.current.toString()
                 counter.current++
@@ -73,7 +74,7 @@ export const useFlashbar = () => {
                     id: id,
                     header: header,
                     type: type,
-                    content: content,
+                    content: content.toString(),
                     dismissible: true,
                     onDismiss: (event) => {
                         setItems((items) =>
@@ -107,9 +108,21 @@ const getOptions = (api: ApiPromise) => {
     }
 }
 
+export type Account =
+    | { type: "injected"; account: InjectedAccountWithMeta }
+    | {
+          type: "internal"
+          account: {
+              address: string
+              meta: {
+                  name?: string
+              }
+          }
+      }
+
 const App = () => {
     const [apiPromise, setApiPromise] = useState<ApiPromise | null>(null)
-    const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([])
+    const [accounts, setAccounts] = useState<Account[]>([])
     const [selectedOption, setSelectedOption] =
         useState<OptionDefinition | null>(null)
     const [accountBalance, setAccountBalance] = useState<number>(0)
@@ -117,34 +130,87 @@ const App = () => {
     const [value, setValue] = useState(0)
 
     const originAddress = selectedOption?.value
+    const keyring = useRef(new Keyring({ type: "sr25519" }))
 
     useEffect(() => {
         const wsProvider = new WsProvider("wss://ws.test.azero.dev")
         ApiPromise.create({ provider: wsProvider })
             .then(setApiPromise)
             .catch(addError)
-        web3Enable("Crowdfunding")
-            .then((extensions) => {
-                if (extensions.length === 0) {
-                    return []
-                }
-                return web3Accounts()
-            })
-            .then((a) => {
-                setAccounts(a)
-                if (a.length > 0)
-                    setSelectedOption({
-                        label: a[0].meta.name!,
-                        value: a[0].address,
+            .then(() => {
+                web3Enable("Crowdfunding")
+                    .then((extensions) => {
+                        if (extensions.length === 0) {
+                            return []
+                        }
+                        return web3Accounts()
                     })
+                    .then((a) => {
+                        let ab: Account[]
+                        if (a.length === 0) {
+                            ab = [
+                                {
+                                    type: "internal",
+                                    account: {
+                                        address: keyring.current.addFromUri(
+                                            "wage author educate oil frame there room pave dad mechanic theory debris"
+                                        ).address,
+                                        meta: {
+                                            name: "Alice",
+                                        },
+                                    },
+                                },
+                                {
+                                    type: "internal",
+                                    account: {
+                                        address: keyring.current.addFromUri(
+                                            "atom castle crucial vivid baby junior inner lawn father night follow year"
+                                        ).address,
+                                        meta: {
+                                            name: "Bob",
+                                        },
+                                    },
+                                },
+                                {
+                                    type: "internal",
+                                    account: {
+                                        address: keyring.current.addFromUri(
+                                            "trial advice enter lumber wrap ordinary fame tumble together coach item addict"
+                                        ).address,
+                                        meta: {
+                                            name: "Charlie",
+                                        },
+                                    },
+                                },
+                            ]
+                        } else {
+                            ab = a.map<Account>((account) => {
+                                return { type: "injected", account: account }
+                            })
+                        }
+
+                        setAccounts(ab)
+                        if (ab.length > 0)
+                            setSelectedOption({
+                                label: ab[0].account.meta.name!,
+                                value: ab[0].account.address,
+                            })
+                    })
+                    .catch(console.log)
             })
-            .catch(addError)
     }, [])
 
     const api = useMemo(
         () =>
             apiPromise && originAddress
-                ? new API(apiPromise, originAddress, getOptions(apiPromise))
+                ? new API(
+                      apiPromise,
+                      accounts.find(
+                          (a) => a.account.address === originAddress
+                      )!,
+                      getOptions(apiPromise),
+                      keyring.current
+                  )
                 : null,
         [apiPromise, originAddress]
     )
@@ -187,7 +253,10 @@ const App = () => {
                 }}
                 loadingText={"select"}
                 options={accounts.map((x) => {
-                    return { label: x.meta.name!, value: x.address }
+                    return {
+                        label: x.account.meta.name!,
+                        value: x.account.address,
+                    }
                 })}
                 selectedAriaLabel="Selected"
             />
