@@ -1,6 +1,7 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from "react";
 import {
-    AppLayout, BarChart,
+    AppLayout,
+    BarChart,
     Box,
     Button,
     ButtonDropdown,
@@ -11,42 +12,57 @@ import {
     Icon,
     Input,
     ProgressBar,
-    SpaceBetween
+    SpaceBetween,
 } from "@cloudscape-design/components";
-import {useParams} from "react-router-dom";
-import {ProjectInfo, ProjectVotes} from "../api/Types";
-import {useAccounts, useAccountSelector, useApi, useFlashbar, useForceUpdate, useOriginAddress} from "../App";
-import {formatCurrency} from "../utils/Utils";
+import { useParams } from "react-router-dom";
+import { ProjectInfo, ProjectVotes } from "../api/Types";
+import {
+    useAccounts,
+    useAccountSelector,
+    useApi,
+    useFlashbar,
+    useForceUpdate,
+    useOriginAddress,
+} from "../App";
+import { formatCurrency } from "../utils/Utils";
 
 const ProjectView = () => {
+    const { projectName } = useParams();
+    const [projectInfo, setProjectInfo] = useState<ProjectInfo>();
+    const [raised, setRaised] = useState(0);
+    const [contribution, setContribution] = useState(0);
+    const [input, setInput] = useState("");
+    const [votes, setVotes] = useState<ProjectVotes>({
+        ovrVotedYes: 1,
+        ovrVotedNo: 0,
+    });
 
-    const {projectName} = useParams()
-    const [projectInfo, setProjectInfo] = useState<ProjectInfo>()
-    const [raised, setRaised] = useState(0)
-    const [contribution, setContribution] = useState(0)
-    const [input, setInput] = useState("")
-    const [votes, setVotes] = useState<ProjectVotes>({ovrVotedYes: 1, ovrVotedNo: 0})
+    const api = useApi();
+    const originAddress = useOriginAddress();
+    const accountSelector = useAccountSelector();
+    const { flashbar, addError } = useFlashbar();
+    const accounts = useAccounts();
 
-    const api = useApi()
-    const originAddress = useOriginAddress()
-    const accountSelector = useAccountSelector()
-    const {flashbar, addError} = useFlashbar()
-    const accounts = useAccounts()
+    const { dependency, forceUpdate } = useForceUpdate();
 
-    const {dependency, forceUpdate} = useForceUpdate()
-
-    const isAuthor = projectInfo?.author === originAddress
+    const isAuthor = projectInfo?.author === originAddress;
 
     useEffect(() => {
-        api.getProjectInfo(projectName!).then(setProjectInfo).catch(addError)
-        api.getCollectedBudget(projectName!).then(setRaised).catch(addError)
-        api.getDonatedAmount(projectName!, originAddress).then(setContribution).catch(addError)
-        api.getVotingState(projectName!).then(setVotes).catch(e => addError(`GetVotingState: ${e}`))
+        api.getProjectInfo(projectName!).then(setProjectInfo).catch(addError);
+        api.getCollectedBudget(projectName!).then(setRaised).catch(addError);
+        api.getDonatedAmount(projectName!, originAddress)
+            .then(setContribution)
+            .catch(addError);
+        api.getVotingState(projectName!)
+            .then(setVotes)
+            .catch((e) => addError(`GetVotingState: ${e}`));
         // api.getCollectedBudgetSub(projectName!, {handleOk: setRaised, handleErr: addError}).catch(addError)
         // api.getDonatedAmountSub(projectName!, originAddress, {handleOk: setContribution, handleErr: addError}).catch(addError)
-    }, [dependency, api, projectName, originAddress])
+    }, [dependency, api, projectName, originAddress]);
 
-    const account = accounts.find(account => account.address === projectInfo?.author)
+    const account = accounts.find(
+        (account) => account.address === projectInfo?.author
+    );
 
     const content = projectInfo ? (
         <SpaceBetween size={"l"}>
@@ -66,7 +82,9 @@ const ProjectView = () => {
                     </div>
                     <div>
                         <Box variant="awsui-key-label">Author</Box>
-                        <div>{`${projectInfo.author}${account ? ` (${account.meta.name})` : ""}`}</div>
+                        <div>{`${projectInfo.author}${
+                            account ? ` (${account.meta.name})` : ""
+                        }`}</div>
                     </div>
                 </SpaceBetween>
 
@@ -84,12 +102,15 @@ const ProjectView = () => {
                         <div>{formatCurrency(contribution)}</div>
                     </div>
                     <div>
-                        {
-                            raised < projectInfo.goal ?
-                                <ProgressBar value={raised / projectInfo.goal * 100}/>
-                                :
-                                <center><strong>The goal has been reached!</strong></center>
-                        }
+                        {raised < projectInfo.goal ? (
+                            <ProgressBar
+                                value={(raised / projectInfo.goal) * 100}
+                            />
+                        ) : (
+                            <center>
+                                <strong>The goal has been reached!</strong>
+                            </center>
+                        )}
                     </div>
                     {raised > 0 ? (
                         <BarChart
@@ -97,27 +118,34 @@ const ProjectView = () => {
                                 {
                                     title: "Yes",
                                     type: "bar",
-                                    valueFormatter: e => `${(100 * e / raised).toFixed(0)}%`,
+                                    valueFormatter: (e) =>
+                                        `${((100 * e) / raised).toFixed(0)}%`,
                                     data: [
-                                        {x: "Votes", y: votes.ovrVotedYes},
-                                    ]
+                                        { x: "Votes", y: votes.ovrVotedYes },
+                                    ],
                                 },
                                 {
                                     title: "No",
                                     type: "bar",
-                                    valueFormatter: e => `${(100 * e / raised).toFixed(0)}%`,
-                                    data: [
-                                        {x: "Votes", y: votes.ovrVotedNo},
-                                    ]
+                                    valueFormatter: (e) =>
+                                        `${((100 * e) / raised).toFixed(0)}%`,
+                                    data: [{ x: "Votes", y: votes.ovrVotedNo }],
                                 },
                                 {
                                     title: "Hasn't voted yet",
                                     type: "bar",
-                                    valueFormatter: e => `${(100 * e / raised).toFixed(0)}%`,
+                                    valueFormatter: (e) =>
+                                        `${((100 * e) / raised).toFixed(0)}%`,
                                     data: [
-                                        {x: "Votes", y: raised - votes.ovrVotedNo - votes.ovrVotedYes},
-                                    ]
-                                }
+                                        {
+                                            x: "Votes",
+                                            y:
+                                                raised -
+                                                votes.ovrVotedNo -
+                                                votes.ovrVotedYes,
+                                        },
+                                    ],
+                                },
                             ]}
                             xDomain={["Votes"]}
                             yDomain={[0, raised]}
@@ -146,44 +174,53 @@ const ProjectView = () => {
                                     <Button>Clear filter</Button>
                                 </Box>
                             }
-                        />) : <></>}
-
+                        />
+                    ) : (
+                        <></>
+                    )}
 
                     <FormField label={"Donate"}>
                         <SpaceBetween direction={"horizontal"} size={"s"}>
-                            <Input onChange={event => setInput(event.detail.value)} inputMode={"numeric"}
-                                   placeholder={"Amount"} value={input}/>
-                            <ButtonDropdown onItemClick={event => {
-                                const value = Number(input) * 10 ** Number(event.detail.id)
-                                if (isNaN(value))
-                                    addError("Not a number")
-                                else {
-                                    setInput("")
-                                    api.makeDonation(
-                                        projectName!,
-                                        value,
-                                        {
-                                            handleOk: forceUpdate,
-                                            handleErr: addError
-                                        }).catch(addError)
+                            <Input
+                                onChange={(event) =>
+                                    setInput(event.detail.value)
                                 }
-                            }} items={[
-                                {text: "TZERO", id: "12"},
-                                {text: "mTZERO", id: "9"},
-                                {text: "µTZERO", id: "6"},
-                                {text: "nTZERO", id: "3"},
-                                {text: "pTZERO", id: "0"},
-                            ]}>
+                                inputMode={"numeric"}
+                                placeholder={"Amount"}
+                                value={input}
+                            />
+                            <ButtonDropdown
+                                onItemClick={(event) => {
+                                    const value =
+                                        Number(input) *
+                                        10 ** Number(event.detail.id);
+                                    if (isNaN(value)) addError("Not a number");
+                                    else {
+                                        setInput("");
+                                        api.makeDonation(projectName!, value, {
+                                            handleOk: forceUpdate,
+                                            handleErr: addError,
+                                        }).catch(addError);
+                                    }
+                                }}
+                                items={[
+                                    { text: "TZERO", id: "12" },
+                                    { text: "mTZERO", id: "9" },
+                                    { text: "µTZERO", id: "6" },
+                                    { text: "nTZERO", id: "3" },
+                                    { text: "pTZERO", id: "0" },
+                                ]}
+                            >
                                 Donate
                             </ButtonDropdown>
                         </SpaceBetween>
                     </FormField>
-
                 </SpaceBetween>
             </ColumnLayout>
-
         </SpaceBetween>
-    ) : <></>
+    ) : (
+        <></>
+    );
 
     return (
         <AppLayout
@@ -209,52 +246,87 @@ const ProjectView = () => {
                         header={
                             <Header
                                 actions={
-                                    <SpaceBetween direction={"horizontal"} size={"s"}>
+                                    <SpaceBetween
+                                        direction={"horizontal"}
+                                        size={"s"}
+                                    >
                                         <ButtonDropdown
-                                            onItemClick={event =>
-                                                api.makeVote(
-                                                    projectName!,
-                                                    event.detail.id === "1",
-                                                    {
-                                                        handleOk: forceUpdate,
-                                                        handleErr: addError
-                                                    }).catch(addError)
-
+                                            onItemClick={(event) =>
+                                                api
+                                                    .makeVote(
+                                                        projectName!,
+                                                        event.detail.id === "1",
+                                                        {
+                                                            handleOk:
+                                                                forceUpdate,
+                                                            handleErr: addError,
+                                                        }
+                                                    )
+                                                    .catch(addError)
                                             }
                                             items={[
-                                                {text: "Yes", id: "1"},
-                                                {text: "No", id: "0"}
-                                            ]}>
+                                                { text: "Yes", id: "1" },
+                                                { text: "No", id: "0" },
+                                            ]}
+                                        >
                                             Vote
                                         </ButtonDropdown>
-                                        <Button onClick={() => api.refundDonation(projectName!, {
-                                            handleOk: () => console.log("OK"),
-                                            handleErr: addError
-                                        }).catch(addError)}>
+                                        <Button
+                                            onClick={() =>
+                                                api
+                                                    .refundDonation(
+                                                        projectName!,
+                                                        {
+                                                            handleOk: () =>
+                                                                console.log(
+                                                                    "OK"
+                                                                ),
+                                                            handleErr: addError,
+                                                        }
+                                                    )
+                                                    .catch(addError)
+                                            }
+                                        >
                                             Refund
                                         </Button>
-                                        <Button variant="primary" onClick={() => api.claimBudget(projectName!, {
-                                            handleOk: () => console.log("OK"),
-                                            handleErr: addError
-                                        }).catch(addError)}>
+                                        <Button
+                                            variant="primary"
+                                            onClick={() =>
+                                                api
+                                                    .claimBudget(projectName!, {
+                                                        handleOk: () =>
+                                                            console.log("OK"),
+                                                        handleErr: addError,
+                                                    })
+                                                    .catch(addError)
+                                            }
+                                        >
                                             Claim
                                         </Button>
                                     </SpaceBetween>
                                 }
                                 variant={"h1"}
-                                info={projectInfo?.author === originAddress ?
-                                    <Icon variant={"subtle"} name={"user-profile"}/> : <></>}
+                                info={
+                                    projectInfo?.author === originAddress ? (
+                                        <Icon
+                                            variant={"subtle"}
+                                            name={"user-profile"}
+                                        />
+                                    ) : (
+                                        <></>
+                                    )
+                                }
                             >
                                 {projectName}
                             </Header>
-                        }>
-
+                        }
+                    >
                         {content}
                     </Container>
                 </SpaceBetween>
             }
         />
-    )
-}
+    );
+};
 
-export default ProjectView
+export default ProjectView;

@@ -87,7 +87,7 @@ const getOptions = (api: ApiPromise) => {
 const App = () => {
 
     const [apiPromise, setApiPromise] = useState<ApiPromise | null>(null)
-    const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([])
+    const [accounts, setAccounts] = useState<InjectedAccountWithMeta[]>([]);
     const [selectedOption, setSelectedOption] = useState<OptionDefinition | null>(null)
     const [accountBalance, setAccountBalance] = useState<number>(0)
     const {flashbar, addError} = useFlashbar()

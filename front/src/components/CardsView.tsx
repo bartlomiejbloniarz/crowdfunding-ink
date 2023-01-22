@@ -4,7 +4,6 @@ import Link from "../utils/Link";
 import {useApi, useForceUpdate} from "../App";
 import CreateForm from "./CreateForm";
 import {formatCurrency} from "../utils/Utils";
-import {KeyCode} from "@cloudscape-design/components/internal/keycode";
 
 interface ItemType{
     name: string,

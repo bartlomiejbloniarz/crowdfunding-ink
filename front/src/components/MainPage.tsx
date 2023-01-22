@@ -1,11 +1,10 @@
-import React from 'react';
-import {AppLayout, Header, SpaceBetween,} from "@cloudscape-design/components";
+import React from "react";
+import { AppLayout, Header, SpaceBetween } from "@cloudscape-design/components";
 import CardsView from "./CardsView";
-import {useAccountSelector} from "../App";
+import { useAccountSelector } from "../App";
 
 function MainPage() {
-
-    const accountSelector = useAccountSelector()
+    const accountSelector = useAccountSelector();
 
     return (
         <AppLayout
@@ -23,9 +22,7 @@ function MainPage() {
                     Crowdfunding platform
                 </Header>
             }
-            content={
-                <CardsView/>
-            }
+            content={<CardsView />}
         />
     );
 }

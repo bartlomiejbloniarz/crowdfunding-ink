@@ -2,6 +2,9 @@
   "name": "front",
   "version": "0.1.0",
   "private": true,
+  "prettier": {
+    "tabWidth": 4
+  },
   "dependencies": {
     "@cloudscape-design/components": "^3.0.170",
     "@cloudscape-design/global-styles": "^1.0.7",
