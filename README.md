@@ -18,8 +18,8 @@ dummy accounts just disable the extension.
 `cargo +nightly contract build --release`
 
 If in the deployment phase your code gets rejected,
-try adding this flag to the build command above:
-`--optimization-passes=0`.
+it may be because a wrong version of `wasm-opt`. Try version 105: 
+[link](https://github.com/WebAssembly/binaryen/releases/tag/version_105).
 
 #### Deploy the contract:
 
