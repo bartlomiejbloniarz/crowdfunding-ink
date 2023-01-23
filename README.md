@@ -5,6 +5,9 @@
 You can play with an already deployed contract on a couple of dummy accounts 
 provided by us.
 Just visit this [website](https://bartlomiejbloniarz.github.io/crowdfunding-ink/).
+If you have the `polkadot{.js}` extension and allow it on this website you will
+be able to use your account instead of our dummy accounts. If you want to use the
+dummy accounts just disable the extension.
 
 ### How to run it yourself?
 
