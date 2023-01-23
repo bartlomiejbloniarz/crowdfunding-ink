@@ -420,21 +420,22 @@ mod crowdfund {
                 }
             }
 
+            let donated = match self.get_donated_amount(project_name.clone(), donor) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+
+            // No donation, no refund
+            if donated <= 0 {
+                return Err(Error::NoFundsToRefund);
+            }
+
             // All conditions to make a refund are met.
 
             // Make note of the refund
             self.refunded.insert((project_name.clone(), donor), &true);
 
             // Transfer the refund.
-            let donated = match self.get_donated_amount(project_name.clone(), donor) {
-                Ok(value) => value,
-                Err(error) => return Err(error),
-            };
-
-            if donated <= 0 {
-                return Err(Error::NoFundsToRefund);
-            }
-
             match self.env().transfer(donor, donated) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(Error::TransferFailed),
@@ -488,6 +489,13 @@ mod crowdfund {
                 Err(error) => return Err(error),
             }
 
+            // No budget, no claim.
+            if budget <= 0 {
+                return Err(Error::NoFundsToClaim);
+            }
+
+            // All conditions to claim were met.
+
             // Make note of the claim.
             self.claimed.insert(project_name, &true);
 
@@ -497,10 +505,6 @@ mod crowdfund {
             match self.env().transfer(self.owner_account, fee) {
                 Ok(_) => (),
                 Err(_) => return Err(Error::TransferFailed),
-            }
-
-            if budget <= 0 {
-                return Err(Error::NoFundsToClaim);
             }
 
             // Transfer the claim.
@@ -791,6 +795,9 @@ mod tests {
 
                         test::set_caller::<DefaultEnvironment>(accs.bob);
                         assert_eq!(contract.get_donor_refunded((String::from("Doll")), accs.bob), Ok(true));
+                        assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::NoFundsToRefund));
+                        
+                        test::set_caller::<DefaultEnvironment>(accs.alice);
                         assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::NoFundsToRefund));
                     },
                 }
