@@ -22,3 +22,9 @@ export interface ProjectVotes {
     ovrVotedYes: number
     ovrVotedNo: number
 }
+
+export interface StaticInfo {
+    ownerAddress: string
+    fee: number
+    votingLength: number
+}

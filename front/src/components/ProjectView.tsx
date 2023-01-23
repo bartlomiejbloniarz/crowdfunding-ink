@@ -13,6 +13,7 @@ import {
     Input,
     ProgressBar,
     SpaceBetween,
+    TextContent,
 } from "@cloudscape-design/components"
 import { useParams } from "react-router-dom"
 import { ProjectInfo, ProjectVotes } from "../api/Types"
@@ -23,6 +24,7 @@ import {
     useFlashbar,
     useForceUpdate,
     useOriginAddress,
+    useStaticInfo,
 } from "../App"
 import { formatCurrency } from "../utils/Utils"
 
@@ -49,6 +51,8 @@ const ProjectView = () => {
     const { dependency, forceUpdate } = useForceUpdate()
 
     const isAuthor = projectInfo?.author === originAddress
+
+    const staticInfo = useStaticInfo()
 
     useEffect(() => {
         api.getProjectInfo(projectName!).then(setProjectInfo).catch(addError)
@@ -87,6 +91,15 @@ const ProjectView = () => {
                     <div>
                         <Box variant="awsui-key-label">Deadline</Box>
                         <div>{projectInfo.deadline.toLocaleString()}</div>
+                    </div>
+                    <div>
+                        <Box variant="awsui-key-label">Voting deadline</Box>
+                        <div>
+                            {new Date(
+                                projectInfo.deadline.valueOf() +
+                                    staticInfo.votingLength
+                            ).toLocaleString()}
+                        </div>
                     </div>
                     <div>
                         <Box variant="awsui-key-label">Author</Box>
@@ -360,6 +373,10 @@ const ProjectView = () => {
                     >
                         {content}
                     </Container>
+                    <TextContent>
+                        ContractOwner: {staticInfo.ownerAddress}
+                    </TextContent>
+                    <TextContent>Fee: {staticInfo.fee}%</TextContent>
                 </SpaceBetween>
             }
         />

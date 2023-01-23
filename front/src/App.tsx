@@ -23,13 +23,13 @@ import MainPage from "./components/MainPage"
 import ProjectView from "./components/ProjectView"
 import NoPage from "./components/NoPage"
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api"
-import { KeyringPair } from "@polkadot/keyring/types"
 import { InjectedAccountWithMeta } from "@polkadot/extension-inject/types"
 import { web3Accounts, web3Enable } from "@polkadot/extension-dapp"
 import { WeightV2 } from "@polkadot/types/interfaces"
 import { OptionDefinition } from "@cloudscape-design/components/internal/components/option/interfaces"
 import { API } from "./api/Methods"
 import { formatCurrency } from "./utils/Utils"
+import { StaticInfo } from "./api/Types"
 
 const ApiContext = createContext<API | null>(null)
 const AccountsContext = createContext<Account[]>([])
@@ -39,6 +39,11 @@ const ForceUpdateContext = createContext<{
     dependency: any
     forceUpdate: () => void
 } | null>(null)
+const StaticInfoContext = createContext<StaticInfo>({
+    ownerAddress: "",
+    fee: 0,
+    votingLength: 0,
+})
 
 export const useApi = () => {
     return useContext(ApiContext)!
@@ -58,6 +63,10 @@ export const useAccounts = () => {
 
 export function useForceUpdate() {
     return useContext(ForceUpdateContext)!
+}
+
+export const useStaticInfo = () => {
+    return useContext(StaticInfoContext)
 }
 
 export const useFlashbar = () => {
@@ -128,6 +137,11 @@ const App = () => {
     const [accountBalance, setAccountBalance] = useState<number>(0)
     const { flashbar, addError } = useFlashbar()
     const [value, setValue] = useState(0)
+    const [staticInfo, setStaticInfo] = useState<StaticInfo>({
+        ownerAddress: "",
+        fee: 0,
+        votingLength: 0,
+    })
 
     const originAddress = selectedOption?.value
     const keyring = useRef(new Keyring({ type: "sr25519" }))
@@ -216,7 +230,11 @@ const App = () => {
     )
 
     useEffect(() => {
-        if (api) api.getAccountBalance().then(setAccountBalance)
+        if (api) api.getStaticInfo().then(setStaticInfo).catch()
+    }, [api])
+
+    useEffect(() => {
+        if (api) api.getAccountBalance().then(setAccountBalance).catch()
     }, [api, originAddress, value])
 
     if (!api) {
@@ -276,18 +294,26 @@ const App = () => {
                                     setValue((value) => value + 1),
                             }}
                         >
-                            <HashRouter>
-                                <Routes>
-                                    <Route path="/">
-                                        <Route index element={<MainPage />} />
-                                        <Route
-                                            path={"projects/:projectName"}
-                                            element={<ProjectView />}
-                                        />
-                                        <Route path="*" element={<NoPage />} />
-                                    </Route>
-                                </Routes>
-                            </HashRouter>
+                            <StaticInfoContext.Provider value={staticInfo}>
+                                <HashRouter>
+                                    <Routes>
+                                        <Route path="/">
+                                            <Route
+                                                index
+                                                element={<MainPage />}
+                                            />
+                                            <Route
+                                                path={"projects/:projectName"}
+                                                element={<ProjectView />}
+                                            />
+                                            <Route
+                                                path="*"
+                                                element={<NoPage />}
+                                            />
+                                        </Route>
+                                    </Routes>
+                                </HashRouter>
+                            </StaticInfoContext.Provider>
                         </ForceUpdateContext.Provider>
                     </AccountContext.Provider>
                 </OriginAddressContext.Provider>

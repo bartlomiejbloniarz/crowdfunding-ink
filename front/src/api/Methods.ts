@@ -1,4 +1,10 @@
-import { ProjectInfo, ProjectInfoResponse, ProjectVotes, Result } from "./Types"
+import {
+    ProjectInfo,
+    ProjectInfoResponse,
+    ProjectVotes,
+    Result,
+    StaticInfo,
+} from "./Types"
 import { ContractPromise } from "@polkadot/api-contract"
 import type { WeightV2 } from "@polkadot/types/interfaces"
 import { web3FromAddress } from "@polkadot/extension-dapp"
@@ -8,6 +14,7 @@ import { ContractCallOutcome } from "@polkadot/api-contract/types"
 import { ISubmittableResult } from "@polkadot/types/types/extrinsic"
 import { Account } from "../App"
 import { SubmittableExtrinsic } from "@polkadot/api/promise/types"
+import { toNumber } from "../utils/Utils"
 
 function getResult<T>(outcome: ContractCallOutcome): T {
     if (outcome.result.isOk) {
@@ -171,6 +178,21 @@ export class API {
         )
 
         return getResult(outcome)
+    }
+
+    async getStaticInfo(): Promise<StaticInfo> {
+        const outcome = await this.contract.query.getStaticInfo(
+            this.originAccount.account.address,
+            this.options
+        )
+
+        const staticInfo = getResult<(number | string)[]>(outcome)
+
+        return {
+            votingLength: staticInfo[0] as number,
+            fee: staticInfo[1] as number,
+            ownerAddress: staticInfo[2] as string,
+        }
     }
 
     async getVote(projectName: string): Promise<boolean> {

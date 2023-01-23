@@ -5,3 +5,8 @@ export function formatCurrency(x: number): string {
     if (x >= 10 ** 3) return `${(x / 10 ** 3).toFixed(4)} nTZERO`
     return `${x} pTZERO`
 }
+
+export function toNumber(x: string): number {
+    console.log(x)
+    return Number(x.replace(",", ""))
+}

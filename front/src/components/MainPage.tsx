@@ -1,10 +1,16 @@
 import React from "react"
-import { AppLayout, Header, SpaceBetween } from "@cloudscape-design/components"
+import {
+    AppLayout,
+    Header,
+    SpaceBetween,
+    TextContent,
+} from "@cloudscape-design/components"
 import CardsView from "./CardsView"
-import { useAccountSelector } from "../App"
+import { useAccountSelector, useStaticInfo } from "../App"
 
 function MainPage() {
     const accountSelector = useAccountSelector()
+    const staticInfo = useStaticInfo()
 
     return (
         <AppLayout
@@ -22,7 +28,15 @@ function MainPage() {
                     Crowdfunding platform
                 </Header>
             }
-            content={<CardsView />}
+            content={
+                <SpaceBetween size={"xs"}>
+                    <CardsView />
+                    <TextContent>
+                        ContractOwner: {staticInfo.ownerAddress}
+                    </TextContent>
+                    <TextContent>Fee: {staticInfo.fee}%</TextContent>
+                </SpaceBetween>
+            }
         />
     )
 }
