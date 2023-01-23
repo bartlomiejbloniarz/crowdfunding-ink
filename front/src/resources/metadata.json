@@ -1,11 +1,11 @@
 {
   "source": {
-    "hash": "0xaab7c92ee781f383c687f4c561f75ed275c4a2a74b1cf9221cda836b8bcbc87e",
+    "hash": "0x41c943f1b7d73f3ce21466777b7d03e15ba9f7fc8a419f650e8a73050fd8340b",
     "language": "ink! 3.4.0",
     "compiler": "rustc 1.68.0-nightly"
   },
   "contract": {
-    "name": "test",
+    "name": "blokłańcuch",
     "version": "0.1.0",
     "authors": [
       "[your_name] <[your_email]>"
@@ -369,6 +369,30 @@
             "type": 18
           },
           "selector": "0x0118208d"
+        },
+        {
+          "args": [
+            {
+              "label": "project_name",
+              "type": {
+                "displayName": [
+                  "String"
+                ],
+                "type": 5
+              }
+            }
+          ],
+          "docs": [],
+          "label": "get_project_voting_result",
+          "mutates": false,
+          "payable": false,
+          "returnType": {
+            "displayName": [
+              "Result"
+            ],
+            "type": 24
+          },
+          "selector": "0x4862778b"
         },
         {
           "args": [
