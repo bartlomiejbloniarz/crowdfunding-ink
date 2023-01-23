@@ -1,6 +1,6 @@
 {
   "source": {
-    "hash": "0x9a22c0049f1e53c3ce1cdd40e8932fca25b070981e4790a3a00891feeee89537",
+    "hash": "0x9624cbfb9fe3ab43b59a9d96023643f6aab5115705f1f257fdf723c63e28ee16",
     "language": "ink! 3.4.0",
     "compiler": "rustc 1.68.0-nightly"
   },
@@ -15,7 +15,35 @@
     "spec": {
       "constructors": [
         {
-          "args": [],
+          "args": [
+            {
+              "label": "voting_length",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "label": "fee_percent",
+              "type": {
+                "displayName": [
+                  "u8"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "label": "owner_account",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 2
+              }
+            }
+          ],
           "docs": [],
           "label": "new",
           "payable": false,
@@ -33,7 +61,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             },
             {
@@ -42,7 +70,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             },
             {
@@ -51,7 +79,7 @@
                 "displayName": [
                   "Timestamp"
                 ],
-                "type": 6
+                "type": 0
               }
             },
             {
@@ -84,7 +112,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             }
           ],
@@ -108,7 +136,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             }
           ],
@@ -132,7 +160,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             }
           ],
@@ -156,7 +184,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             }
           ],
@@ -180,7 +208,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             },
             {
@@ -189,7 +217,7 @@
                 "displayName": [
                   "AccountId"
                 ],
-                "type": 3
+                "type": 2
               }
             }
           ],
@@ -213,7 +241,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             },
             {
@@ -222,7 +250,7 @@
                 "displayName": [
                   "AccountId"
                 ],
-                "type": 3
+                "type": 2
               }
             }
           ],
@@ -246,7 +274,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             },
             {
@@ -255,7 +283,7 @@
                 "displayName": [
                   "AccountId"
                 ],
-                "type": 3
+                "type": 2
               }
             }
           ],
@@ -293,7 +321,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             }
           ],
@@ -317,7 +345,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             },
             {
@@ -350,7 +378,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             }
           ],
@@ -374,7 +402,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 5
               }
             }
           ],
@@ -402,12 +430,39 @@
                 "ty": 0
               }
             },
-            "name": "projects"
+            "name": "voting_length"
           },
           {
             "layout": {
               "cell": {
                 "key": "0x0100000000000000000000000000000000000000000000000000000000000000",
+                "ty": 1
+              }
+            },
+            "name": "fee_percent"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
+                "ty": 2
+              }
+            },
+            "name": "owner_account"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
+                "ty": 4
+              }
+            },
+            "name": "projects"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0400000000000000000000000000000000000000000000000000000000000000",
                 "ty": 9
               }
             },
@@ -416,7 +471,7 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
+                "key": "0x0500000000000000000000000000000000000000000000000000000000000000",
                 "ty": 10
               }
             },
@@ -425,7 +480,7 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
+                "key": "0x0600000000000000000000000000000000000000000000000000000000000000",
                 "ty": 12
               }
             },
@@ -434,7 +489,7 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0400000000000000000000000000000000000000000000000000000000000000",
+                "key": "0x0700000000000000000000000000000000000000000000000000000000000000",
                 "ty": 14
               }
             },
@@ -443,7 +498,7 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0500000000000000000000000000000000000000000000000000000000000000",
+                "key": "0x0800000000000000000000000000000000000000000000000000000000000000",
                 "ty": 16
               }
             },
@@ -452,7 +507,7 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0600000000000000000000000000000000000000000000000000000000000000",
+                "key": "0x0900000000000000000000000000000000000000000000000000000000000000",
                 "ty": 16
               }
             },
@@ -461,7 +516,7 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0700000000000000000000000000000000000000000000000000000000000000",
+                "key": "0x0a00000000000000000000000000000000000000000000000000000000000000",
                 "ty": 17
               }
             },
@@ -473,6 +528,53 @@
     "types": [
       {
         "id": 0,
+        "type": {
+          "def": {
+            "primitive": "u64"
+          }
+        }
+      },
+      {
+        "id": 1,
+        "type": {
+          "def": {
+            "primitive": "u8"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "type": {
+          "def": {
+            "composite": {
+              "fields": [
+                {
+                  "type": 3,
+                  "typeName": "[u8; 32]"
+                }
+              ]
+            }
+          },
+          "path": [
+            "ink_env",
+            "types",
+            "AccountId"
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "type": {
+          "def": {
+            "array": {
+              "len": 32,
+              "type": 1
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
         "type": {
           "def": {
             "composite": {
@@ -488,11 +590,11 @@
           "params": [
             {
               "name": "K",
-              "type": 1
+              "type": 5
             },
             {
               "name": "V",
-              "type": 2
+              "type": 6
             }
           ],
           "path": [
@@ -504,7 +606,7 @@
         }
       },
       {
-        "id": 1,
+        "id": 5,
         "type": {
           "def": {
             "primitive": "str"
@@ -512,29 +614,29 @@
         }
       },
       {
-        "id": 2,
+        "id": 6,
         "type": {
           "def": {
             "composite": {
               "fields": [
                 {
                   "name": "description",
-                  "type": 1,
+                  "type": 5,
                   "typeName": "String"
                 },
                 {
                   "name": "author",
-                  "type": 3,
+                  "type": 2,
                   "typeName": "AccountId"
                 },
                 {
                   "name": "create_time",
-                  "type": 6,
+                  "type": 0,
                   "typeName": "Timestamp"
                 },
                 {
                   "name": "deadline",
-                  "type": 6,
+                  "type": 0,
                   "typeName": "Timestamp"
                 },
                 {
@@ -553,53 +655,6 @@
         }
       },
       {
-        "id": 3,
-        "type": {
-          "def": {
-            "composite": {
-              "fields": [
-                {
-                  "type": 4,
-                  "typeName": "[u8; 32]"
-                }
-              ]
-            }
-          },
-          "path": [
-            "ink_env",
-            "types",
-            "AccountId"
-          ]
-        }
-      },
-      {
-        "id": 4,
-        "type": {
-          "def": {
-            "array": {
-              "len": 32,
-              "type": 5
-            }
-          }
-        }
-      },
-      {
-        "id": 5,
-        "type": {
-          "def": {
-            "primitive": "u8"
-          }
-        }
-      },
-      {
-        "id": 6,
-        "type": {
-          "def": {
-            "primitive": "u64"
-          }
-        }
-      },
-      {
         "id": 7,
         "type": {
           "def": {
@@ -614,7 +669,7 @@
             "composite": {
               "fields": [
                 {
-                  "type": 4,
+                  "type": 3,
                   "typeName": "[u8; 32]"
                 }
               ]
@@ -643,7 +698,7 @@
           "params": [
             {
               "name": "K",
-              "type": 1
+              "type": 5
             },
             {
               "name": "V",
@@ -675,7 +730,7 @@
           "params": [
             {
               "name": "K",
-              "type": 1
+              "type": 5
             },
             {
               "name": "V",
@@ -733,7 +788,7 @@
           "params": [
             {
               "name": "K",
-              "type": 1
+              "type": 5
             },
             {
               "name": "V",
@@ -793,8 +848,8 @@
         "type": {
           "def": {
             "tuple": [
-              1,
-              3
+              5,
+              2
             ]
           }
         }
@@ -836,7 +891,7 @@
         "type": {
           "def": {
             "sequence": {
-              "type": 1
+              "type": 5
             }
           }
         }
@@ -903,7 +958,7 @@
                 },
                 {
                   "index": 1,
-                  "name": "CampaingResultUnknown"
+                  "name": "CampaignResultUnknown"
                 },
                 {
                   "index": 2,
@@ -927,38 +982,58 @@
                 },
                 {
                   "index": 7,
-                  "name": "GoalNotReached"
+                  "name": "DeadlineTooEarly"
                 },
                 {
                   "index": 8,
-                  "name": "NoFundsDontatedNoVote"
+                  "name": "DescriptionTooLong"
                 },
                 {
                   "index": 9,
-                  "name": "NoFundsToClaim"
+                  "name": "GoalNotReached"
                 },
                 {
                   "index": 10,
-                  "name": "NoFundsToRefund"
+                  "name": "IncorrectFeePercentage"
                 },
                 {
                   "index": 11,
-                  "name": "NoSuchVote"
+                  "name": "NameTooLong"
                 },
                 {
                   "index": 12,
-                  "name": "ProjectAlreadyExists"
+                  "name": "NoFundsDontatedNoVote"
                 },
                 {
                   "index": 13,
-                  "name": "ProjectDoesntExist"
+                  "name": "NoFundsToClaim"
                 },
                 {
                   "index": 14,
-                  "name": "TransferFailed"
+                  "name": "NoFundsToRefund"
                 },
                 {
                   "index": 15,
+                  "name": "NoSuchVote"
+                },
+                {
+                  "index": 16,
+                  "name": "ProjectAlreadyExists"
+                },
+                {
+                  "index": 17,
+                  "name": "ProjectDoesntExist"
+                },
+                {
+                  "index": 18,
+                  "name": "TransferFailed"
+                },
+                {
+                  "index": 19,
+                  "name": "VotingDeadlinePassed"
+                },
+                {
+                  "index": 20,
                   "name": "YouAreNotTheFather"
                 }
               ]
@@ -980,7 +1055,7 @@
                 {
                   "fields": [
                     {
-                      "type": 2
+                      "type": 6
                     }
                   ],
                   "index": 0,
@@ -1001,7 +1076,7 @@
           "params": [
             {
               "name": "T",
-              "type": 2
+              "type": 6
             },
             {
               "name": "E",
