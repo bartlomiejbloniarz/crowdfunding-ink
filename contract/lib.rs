@@ -9,6 +9,8 @@ mod crowdfund {
 
     const MAX_VOTING_TIME: u64 = 90 * 24 * 60 * 60 * 1000;  // 90 days
     const MAX_FEE_PERCENT: u8 = 100;
+    const MAX_NAME_LENGTH: usize = 50;
+    const MAX_DESCRIPTION_LENGTH: usize = 500;
 
     #[derive(scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
@@ -20,8 +22,11 @@ mod crowdfund {
         CantDonateOwnProject,
         DeadlineNotPassedYet,
         DeadlinePassed,
+        DeadlineTooEarly,
+        DescriptionTooLong,
         GoalNotReached,
         IncorrectFeePercentage,
+        NameTooLong,
         NoFundsDontatedNoVote,
         NoFundsToClaim,
         NoFundsToRefund,
@@ -97,7 +102,7 @@ mod crowdfund {
                 if fee_percent > MAX_FEE_PERCENT {
                     contract.fee_percent = MAX_FEE_PERCENT;
                 }
-                
+
                 contract.owner_account = owner_account;
             })
         }
@@ -117,6 +122,18 @@ mod crowdfund {
 
             let author = self.env().caller();
             let create_time = self.env().block_timestamp();
+
+            if create_time >= deadline {
+                return Err(Error::DeadlineTooEarly);
+            }
+
+            if project_name.len() > MAX_NAME_LENGTH {
+                return Err(Error::NameTooLong);
+            }
+
+            if description.len() > MAX_DESCRIPTION_LENGTH {
+                return Err(Error::DescriptionTooLong);
+            }
 
             // Compose immutable project info.
             let info = ProjectInfo {
