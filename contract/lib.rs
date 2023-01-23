@@ -11,6 +11,7 @@ mod crowdfund {
     const MAX_FEE_PERCENT: u8 = 100;
     const MAX_NAME_LENGTH: usize = 50;
     const MAX_DESCRIPTION_LENGTH: usize = 500;
+    const MIN_GOAL: u128 = 1;
 
     #[derive(scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
@@ -25,6 +26,7 @@ mod crowdfund {
         DeadlineTooEarly,
         DescriptionTooLong,
         GoalNotReached,
+        GoalTooSmall,
         IncorrectFeePercentage,
         NameTooLong,
         NoFundsDontatedNoVote,
@@ -133,6 +135,10 @@ mod crowdfund {
 
             if description.len() > MAX_DESCRIPTION_LENGTH {
                 return Err(Error::DescriptionTooLong);
+            }
+
+            if goal < MIN_GOAL {
+                return Err(Error::GoalTooSmall);
             }
 
             // Compose immutable project info.
