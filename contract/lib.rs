@@ -7,6 +7,9 @@ mod crowdfund {
     use ink_prelude::{string::String, vec::Vec};
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
+    const MAX_VOTING_TIME: u64 = 90 * 24 * 60 * 60 * 1000;  // 90 days
+    const MAX_FEE_PERCENT: u8 = 100;
+
     #[derive(scale::Encode, scale::Decode)]
     #[cfg_attr(feature = "std", derive(::scale_info::TypeInfo, Debug, PartialEq))]
     pub enum Error {
@@ -64,7 +67,7 @@ mod crowdfund {
         // length of voting in milliseconds
         // global for every project
         voting_length: u64,
-        fee_percent: i8,
+        fee_percent: u8,
         owner_account: AccountId,
         // Mappings from (project) to ...
         projects: Mapping<String, ProjectInfo>, // project --> static info about it
@@ -82,13 +85,19 @@ mod crowdfund {
     use ink_lang::utils::initialize_contract;
     impl Crowdfund {
         #[ink(constructor)]
-        pub fn new(voting_length: u64, fee_percent: i8, owner_account: AccountId) -> Self {
-            if fee_percent > 100 {
-                panic!("Fee percent cannot exceed 100!")
-            }
+        pub fn new(voting_length: u64, fee_percent: u8, owner_account: AccountId) -> Self {
+            // Truncates invalid values to MAX / MIN value.
             initialize_contract(|contract: &mut Self| {
                 contract.voting_length = voting_length;
+                if voting_length > MAX_VOTING_TIME {
+                    contract.voting_length = MAX_VOTING_TIME;
+                }
+
                 contract.fee_percent = fee_percent;
+                if fee_percent > MAX_FEE_PERCENT {
+                    contract.fee_percent = MAX_FEE_PERCENT;
+                }
+                
                 contract.owner_account = owner_account;
             })
         }
@@ -702,7 +711,7 @@ mod tests {
                         }));
                     },
                     None => {
-                        // advance voting past deadline so that it can be decided
+                        // advance voting past the voting deadline so that it can be decided
                         loop {
                             let t = block_timestamp::<DefaultEnvironment>();
                             if t >= 9 {
