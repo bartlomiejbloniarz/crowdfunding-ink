@@ -325,7 +325,7 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
-            // No need to perform a 0 transaction.
+            // No donation, no vote.
             if donated <= 0 {
                 return Err(Error::NoFundsDontatedNoVote);
             }
@@ -431,6 +431,10 @@ mod crowdfund {
                 Err(error) => return Err(error),
             };
 
+            if donated <= 0 {
+                return Err(Error::NoFundsToRefund);
+            }
+
             match self.env().transfer(donor, donated) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(Error::TransferFailed),
@@ -493,6 +497,10 @@ mod crowdfund {
             match self.env().transfer(self.owner_account, fee) {
                 Ok(_) => (),
                 Err(_) => return Err(Error::TransferFailed),
+            }
+
+            if budget <= 0 {
+                return Err(Error::NoFundsToClaim);
             }
 
             // Transfer the claim.
