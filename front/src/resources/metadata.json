@@ -1,6 +1,6 @@
 {
   "source": {
-    "hash": "0x9a22c0049f1e53c3ce1cdd40e8932fca25b070981e4790a3a00891feeee89537",
+    "hash": "0x7c37d52530623e4f87128128e7934aa9e6785aa304736e80567bd9373c250adf",
     "language": "ink! 3.4.0",
     "compiler": "rustc 1.68.0-nightly"
   },
@@ -15,7 +15,35 @@
     "spec": {
       "constructors": [
         {
-          "args": [],
+          "args": [
+            {
+              "label": "voting_length",
+              "type": {
+                "displayName": [
+                  "u64"
+                ],
+                "type": 0
+              }
+            },
+            {
+              "label": "fee_percent",
+              "type": {
+                "displayName": [
+                  "i8"
+                ],
+                "type": 1
+              }
+            },
+            {
+              "label": "owner_account",
+              "type": {
+                "displayName": [
+                  "AccountId"
+                ],
+                "type": 2
+              }
+            }
+          ],
           "docs": [],
           "label": "new",
           "payable": false,
@@ -33,7 +61,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             },
             {
@@ -42,7 +70,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             },
             {
@@ -51,7 +79,7 @@
                 "displayName": [
                   "Timestamp"
                 ],
-                "type": 6
+                "type": 0
               }
             },
             {
@@ -60,7 +88,7 @@
                 "displayName": [
                   "u128"
                 ],
-                "type": 7
+                "type": 8
               }
             }
           ],
@@ -72,7 +100,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 18
+            "type": 19
           },
           "selector": "0x7edfea88"
         },
@@ -84,7 +112,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             }
           ],
@@ -96,7 +124,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 21
+            "type": 22
           },
           "selector": "0x9439195c"
         },
@@ -108,7 +136,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             }
           ],
@@ -120,7 +148,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 22
+            "type": 23
           },
           "selector": "0x439081bd"
         },
@@ -132,7 +160,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             }
           ],
@@ -144,7 +172,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 23
+            "type": 24
           },
           "selector": "0x432820b3"
         },
@@ -156,7 +184,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             }
           ],
@@ -168,7 +196,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 24
+            "type": 25
           },
           "selector": "0xf24a818e"
         },
@@ -180,7 +208,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             },
             {
@@ -189,7 +217,7 @@
                 "displayName": [
                   "AccountId"
                 ],
-                "type": 3
+                "type": 2
               }
             }
           ],
@@ -201,7 +229,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 22
+            "type": 23
           },
           "selector": "0xa22120f0"
         },
@@ -213,7 +241,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             },
             {
@@ -222,7 +250,7 @@
                 "displayName": [
                   "AccountId"
                 ],
-                "type": 3
+                "type": 2
               }
             }
           ],
@@ -234,7 +262,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 24
+            "type": 25
           },
           "selector": "0x3dfc2d3b"
         },
@@ -246,7 +274,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             },
             {
@@ -255,7 +283,7 @@
                 "displayName": [
                   "AccountId"
                 ],
-                "type": 3
+                "type": 2
               }
             }
           ],
@@ -267,7 +295,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 24
+            "type": 25
           },
           "selector": "0x7bc7fc9f"
         },
@@ -281,7 +309,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 25
+            "type": 26
           },
           "selector": "0x5e6f4943"
         },
@@ -293,7 +321,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             }
           ],
@@ -305,7 +333,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 18
+            "type": 19
           },
           "selector": "0x8efa5a94"
         },
@@ -317,7 +345,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             },
             {
@@ -326,7 +354,7 @@
                 "displayName": [
                   "bool"
                 ],
-                "type": 13
+                "type": 14
               }
             }
           ],
@@ -338,7 +366,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 18
+            "type": 19
           },
           "selector": "0x0118208d"
         },
@@ -350,7 +378,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             }
           ],
@@ -362,7 +390,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 18
+            "type": 19
           },
           "selector": "0x2ca6357a"
         },
@@ -374,7 +402,7 @@
                 "displayName": [
                   "String"
                 ],
-                "type": 1
+                "type": 6
               }
             }
           ],
@@ -386,7 +414,7 @@
             "displayName": [
               "Result"
             ],
-            "type": 18
+            "type": 19
           },
           "selector": "0xd155bf39"
         }
@@ -402,13 +430,40 @@
                 "ty": 0
               }
             },
-            "name": "projects"
+            "name": "voting_length"
           },
           {
             "layout": {
               "cell": {
                 "key": "0x0100000000000000000000000000000000000000000000000000000000000000",
-                "ty": 9
+                "ty": 1
+              }
+            },
+            "name": "fee_percent"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
+                "ty": 2
+              }
+            },
+            "name": "owner_account"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
+                "ty": 5
+              }
+            },
+            "name": "projects"
+          },
+          {
+            "layout": {
+              "cell": {
+                "key": "0x0400000000000000000000000000000000000000000000000000000000000000",
+                "ty": 10
               }
             },
             "name": "budgets"
@@ -416,8 +471,8 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0200000000000000000000000000000000000000000000000000000000000000",
-                "ty": 10
+                "key": "0x0500000000000000000000000000000000000000000000000000000000000000",
+                "ty": 11
               }
             },
             "name": "voting_state"
@@ -425,8 +480,8 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0300000000000000000000000000000000000000000000000000000000000000",
-                "ty": 12
+                "key": "0x0600000000000000000000000000000000000000000000000000000000000000",
+                "ty": 13
               }
             },
             "name": "claimed"
@@ -434,8 +489,8 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0400000000000000000000000000000000000000000000000000000000000000",
-                "ty": 14
+                "key": "0x0700000000000000000000000000000000000000000000000000000000000000",
+                "ty": 15
               }
             },
             "name": "donations"
@@ -443,8 +498,8 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0500000000000000000000000000000000000000000000000000000000000000",
-                "ty": 16
+                "key": "0x0800000000000000000000000000000000000000000000000000000000000000",
+                "ty": 17
               }
             },
             "name": "votes"
@@ -452,8 +507,8 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0600000000000000000000000000000000000000000000000000000000000000",
-                "ty": 16
+                "key": "0x0900000000000000000000000000000000000000000000000000000000000000",
+                "ty": 17
               }
             },
             "name": "refunded"
@@ -461,8 +516,8 @@
           {
             "layout": {
               "cell": {
-                "key": "0x0700000000000000000000000000000000000000000000000000000000000000",
-                "ty": 17
+                "key": "0x0a00000000000000000000000000000000000000000000000000000000000000",
+                "ty": 18
               }
             },
             "name": "project_names"
@@ -475,39 +530,15 @@
         "id": 0,
         "type": {
           "def": {
-            "composite": {
-              "fields": [
-                {
-                  "name": "offset_key",
-                  "type": 8,
-                  "typeName": "Key"
-                }
-              ]
-            }
-          },
-          "params": [
-            {
-              "name": "K",
-              "type": 1
-            },
-            {
-              "name": "V",
-              "type": 2
-            }
-          ],
-          "path": [
-            "ink_storage",
-            "lazy",
-            "mapping",
-            "Mapping"
-          ]
+            "primitive": "u64"
+          }
         }
       },
       {
         "id": 1,
         "type": {
           "def": {
-            "primitive": "str"
+            "primitive": "i8"
           }
         }
       },
@@ -518,48 +549,7 @@
             "composite": {
               "fields": [
                 {
-                  "name": "description",
-                  "type": 1,
-                  "typeName": "String"
-                },
-                {
-                  "name": "author",
                   "type": 3,
-                  "typeName": "AccountId"
-                },
-                {
-                  "name": "create_time",
-                  "type": 6,
-                  "typeName": "Timestamp"
-                },
-                {
-                  "name": "deadline",
-                  "type": 6,
-                  "typeName": "Timestamp"
-                },
-                {
-                  "name": "goal",
-                  "type": 7,
-                  "typeName": "u128"
-                }
-              ]
-            }
-          },
-          "path": [
-            "test",
-            "crowdfund",
-            "ProjectInfo"
-          ]
-        }
-      },
-      {
-        "id": 3,
-        "type": {
-          "def": {
-            "composite": {
-              "fields": [
-                {
-                  "type": 4,
                   "typeName": "[u8; 32]"
                 }
               ]
@@ -573,18 +563,18 @@
         }
       },
       {
-        "id": 4,
+        "id": 3,
         "type": {
           "def": {
             "array": {
               "len": 32,
-              "type": 5
+              "type": 4
             }
           }
         }
       },
       {
-        "id": 5,
+        "id": 4,
         "type": {
           "def": {
             "primitive": "u8"
@@ -592,49 +582,14 @@
         }
       },
       {
-        "id": 6,
-        "type": {
-          "def": {
-            "primitive": "u64"
-          }
-        }
-      },
-      {
-        "id": 7,
-        "type": {
-          "def": {
-            "primitive": "u128"
-          }
-        }
-      },
-      {
-        "id": 8,
-        "type": {
-          "def": {
-            "composite": {
-              "fields": [
-                {
-                  "type": 4,
-                  "typeName": "[u8; 32]"
-                }
-              ]
-            }
-          },
-          "path": [
-            "ink_primitives",
-            "Key"
-          ]
-        }
-      },
-      {
-        "id": 9,
+        "id": 5,
         "type": {
           "def": {
             "composite": {
               "fields": [
                 {
                   "name": "offset_key",
-                  "type": 8,
+                  "type": 9,
                   "typeName": "Key"
                 }
               ]
@@ -643,7 +598,7 @@
           "params": [
             {
               "name": "K",
-              "type": 1
+              "type": 6
             },
             {
               "name": "V",
@@ -659,6 +614,82 @@
         }
       },
       {
+        "id": 6,
+        "type": {
+          "def": {
+            "primitive": "str"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "type": {
+          "def": {
+            "composite": {
+              "fields": [
+                {
+                  "name": "description",
+                  "type": 6,
+                  "typeName": "String"
+                },
+                {
+                  "name": "author",
+                  "type": 2,
+                  "typeName": "AccountId"
+                },
+                {
+                  "name": "create_time",
+                  "type": 0,
+                  "typeName": "Timestamp"
+                },
+                {
+                  "name": "deadline",
+                  "type": 0,
+                  "typeName": "Timestamp"
+                },
+                {
+                  "name": "goal",
+                  "type": 8,
+                  "typeName": "u128"
+                }
+              ]
+            }
+          },
+          "path": [
+            "test",
+            "crowdfund",
+            "ProjectInfo"
+          ]
+        }
+      },
+      {
+        "id": 8,
+        "type": {
+          "def": {
+            "primitive": "u128"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "type": {
+          "def": {
+            "composite": {
+              "fields": [
+                {
+                  "type": 3,
+                  "typeName": "[u8; 32]"
+                }
+              ]
+            }
+          },
+          "path": [
+            "ink_primitives",
+            "Key"
+          ]
+        }
+      },
+      {
         "id": 10,
         "type": {
           "def": {
@@ -666,7 +697,7 @@
               "fields": [
                 {
                   "name": "offset_key",
-                  "type": 8,
+                  "type": 9,
                   "typeName": "Key"
                 }
               ]
@@ -675,11 +706,11 @@
           "params": [
             {
               "name": "K",
-              "type": 1
+              "type": 6
             },
             {
               "name": "V",
-              "type": 11
+              "type": 8
             }
           ],
           "path": [
@@ -697,13 +728,45 @@
             "composite": {
               "fields": [
                 {
+                  "name": "offset_key",
+                  "type": 9,
+                  "typeName": "Key"
+                }
+              ]
+            }
+          },
+          "params": [
+            {
+              "name": "K",
+              "type": 6
+            },
+            {
+              "name": "V",
+              "type": 12
+            }
+          ],
+          "path": [
+            "ink_storage",
+            "lazy",
+            "mapping",
+            "Mapping"
+          ]
+        }
+      },
+      {
+        "id": 12,
+        "type": {
+          "def": {
+            "composite": {
+              "fields": [
+                {
                   "name": "ovr_voted_yes",
-                  "type": 7,
+                  "type": 8,
                   "typeName": "u128"
                 },
                 {
                   "name": "ovr_voted_no",
-                  "type": 7,
+                  "type": 8,
                   "typeName": "u128"
                 }
               ]
@@ -717,14 +780,14 @@
         }
       },
       {
-        "id": 12,
+        "id": 13,
         "type": {
           "def": {
             "composite": {
               "fields": [
                 {
                   "name": "offset_key",
-                  "type": 8,
+                  "type": 9,
                   "typeName": "Key"
                 }
               ]
@@ -733,11 +796,11 @@
           "params": [
             {
               "name": "K",
-              "type": 1
+              "type": 6
             },
             {
               "name": "V",
-              "type": 13
+              "type": 14
             }
           ],
           "path": [
@@ -749,7 +812,7 @@
         }
       },
       {
-        "id": 13,
+        "id": 14,
         "type": {
           "def": {
             "primitive": "bool"
@@ -757,14 +820,14 @@
         }
       },
       {
-        "id": 14,
+        "id": 15,
         "type": {
           "def": {
             "composite": {
               "fields": [
                 {
                   "name": "offset_key",
-                  "type": 8,
+                  "type": 9,
                   "typeName": "Key"
                 }
               ]
@@ -773,11 +836,11 @@
           "params": [
             {
               "name": "K",
-              "type": 15
+              "type": 16
             },
             {
               "name": "V",
-              "type": 7
+              "type": 8
             }
           ],
           "path": [
@@ -786,28 +849,28 @@
             "mapping",
             "Mapping"
           ]
-        }
-      },
-      {
-        "id": 15,
-        "type": {
-          "def": {
-            "tuple": [
-              1,
-              3
-            ]
-          }
         }
       },
       {
         "id": 16,
         "type": {
           "def": {
+            "tuple": [
+              6,
+              2
+            ]
+          }
+        }
+      },
+      {
+        "id": 17,
+        "type": {
+          "def": {
             "composite": {
               "fields": [
                 {
                   "name": "offset_key",
-                  "type": 8,
+                  "type": 9,
                   "typeName": "Key"
                 }
               ]
@@ -816,11 +879,11 @@
           "params": [
             {
               "name": "K",
-              "type": 15
+              "type": 16
             },
             {
               "name": "V",
-              "type": 13
+              "type": 14
             }
           ],
           "path": [
@@ -832,17 +895,17 @@
         }
       },
       {
-        "id": 17,
+        "id": 18,
         "type": {
           "def": {
             "sequence": {
-              "type": 1
+              "type": 6
             }
           }
         }
       },
       {
-        "id": 18,
+        "id": 19,
         "type": {
           "def": {
             "variant": {
@@ -850,7 +913,7 @@
                 {
                   "fields": [
                     {
-                      "type": 19
+                      "type": 20
                     }
                   ],
                   "index": 0,
@@ -859,7 +922,7 @@
                 {
                   "fields": [
                     {
-                      "type": 20
+                      "type": 21
                     }
                   ],
                   "index": 1,
@@ -871,11 +934,11 @@
           "params": [
             {
               "name": "T",
-              "type": 19
+              "type": 20
             },
             {
               "name": "E",
-              "type": 20
+              "type": 21
             }
           ],
           "path": [
@@ -884,7 +947,7 @@
         }
       },
       {
-        "id": 19,
+        "id": 20,
         "type": {
           "def": {
             "tuple": []
@@ -892,7 +955,7 @@
         }
       },
       {
-        "id": 20,
+        "id": 21,
         "type": {
           "def": {
             "variant": {
@@ -903,7 +966,7 @@
                 },
                 {
                   "index": 1,
-                  "name": "CampaingResultUnknown"
+                  "name": "CampaignResultUnknown"
                 },
                 {
                   "index": 2,
@@ -931,34 +994,42 @@
                 },
                 {
                   "index": 8,
-                  "name": "NoFundsDontatedNoVote"
+                  "name": "IncorrectFeePercentage"
                 },
                 {
                   "index": 9,
-                  "name": "NoFundsToClaim"
+                  "name": "NoFundsDontatedNoVote"
                 },
                 {
                   "index": 10,
-                  "name": "NoFundsToRefund"
+                  "name": "NoFundsToClaim"
                 },
                 {
                   "index": 11,
-                  "name": "NoSuchVote"
+                  "name": "NoFundsToRefund"
                 },
                 {
                   "index": 12,
-                  "name": "ProjectAlreadyExists"
+                  "name": "NoSuchVote"
                 },
                 {
                   "index": 13,
-                  "name": "ProjectDoesntExist"
+                  "name": "ProjectAlreadyExists"
                 },
                 {
                   "index": 14,
-                  "name": "TransferFailed"
+                  "name": "ProjectDoesntExist"
                 },
                 {
                   "index": 15,
+                  "name": "TransferFailed"
+                },
+                {
+                  "index": 16,
+                  "name": "VotingDeadlinePassed"
+                },
+                {
+                  "index": 17,
                   "name": "YouAreNotTheFather"
                 }
               ]
@@ -968,48 +1039,6 @@
             "test",
             "crowdfund",
             "Error"
-          ]
-        }
-      },
-      {
-        "id": 21,
-        "type": {
-          "def": {
-            "variant": {
-              "variants": [
-                {
-                  "fields": [
-                    {
-                      "type": 2
-                    }
-                  ],
-                  "index": 0,
-                  "name": "Ok"
-                },
-                {
-                  "fields": [
-                    {
-                      "type": 20
-                    }
-                  ],
-                  "index": 1,
-                  "name": "Err"
-                }
-              ]
-            }
-          },
-          "params": [
-            {
-              "name": "T",
-              "type": 2
-            },
-            {
-              "name": "E",
-              "type": 20
-            }
-          ],
-          "path": [
-            "Result"
           ]
         }
       },
@@ -1031,7 +1060,7 @@
                 {
                   "fields": [
                     {
-                      "type": 20
+                      "type": 21
                     }
                   ],
                   "index": 1,
@@ -1047,7 +1076,7 @@
             },
             {
               "name": "E",
-              "type": 20
+              "type": 21
             }
           ],
           "path": [
@@ -1064,7 +1093,7 @@
                 {
                   "fields": [
                     {
-                      "type": 11
+                      "type": 8
                     }
                   ],
                   "index": 0,
@@ -1073,7 +1102,7 @@
                 {
                   "fields": [
                     {
-                      "type": 20
+                      "type": 21
                     }
                   ],
                   "index": 1,
@@ -1085,11 +1114,11 @@
           "params": [
             {
               "name": "T",
-              "type": 11
+              "type": 8
             },
             {
               "name": "E",
-              "type": 20
+              "type": 21
             }
           ],
           "path": [
@@ -1106,7 +1135,7 @@
                 {
                   "fields": [
                     {
-                      "type": 13
+                      "type": 12
                     }
                   ],
                   "index": 0,
@@ -1115,7 +1144,7 @@
                 {
                   "fields": [
                     {
-                      "type": 20
+                      "type": 21
                     }
                   ],
                   "index": 1,
@@ -1127,11 +1156,11 @@
           "params": [
             {
               "name": "T",
-              "type": 13
+              "type": 12
             },
             {
               "name": "E",
-              "type": 20
+              "type": 21
             }
           ],
           "path": [
@@ -1148,7 +1177,7 @@
                 {
                   "fields": [
                     {
-                      "type": 17
+                      "type": 14
                     }
                   ],
                   "index": 0,
@@ -1157,7 +1186,7 @@
                 {
                   "fields": [
                     {
-                      "type": 20
+                      "type": 21
                     }
                   ],
                   "index": 1,
@@ -1169,11 +1198,53 @@
           "params": [
             {
               "name": "T",
-              "type": 17
+              "type": 14
             },
             {
               "name": "E",
-              "type": 20
+              "type": 21
+            }
+          ],
+          "path": [
+            "Result"
+          ]
+        }
+      },
+      {
+        "id": 26,
+        "type": {
+          "def": {
+            "variant": {
+              "variants": [
+                {
+                  "fields": [
+                    {
+                      "type": 18
+                    }
+                  ],
+                  "index": 0,
+                  "name": "Ok"
+                },
+                {
+                  "fields": [
+                    {
+                      "type": 21
+                    }
+                  ],
+                  "index": 1,
+                  "name": "Err"
+                }
+              ]
+            }
+          },
+          "params": [
+            {
+              "name": "T",
+              "type": 18
+            },
+            {
+              "name": "E",
+              "type": 21
             }
           ],
           "path": [
