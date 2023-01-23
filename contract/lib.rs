@@ -7,7 +7,7 @@ mod crowdfund {
     use ink_prelude::{string::String, vec::Vec};
     use ink_storage::{traits::SpreadAllocate, Mapping};
 
-    const MAX_VOTING_TIME: u64 = 90 * 24 * 60 * 60 * 1000;  // 90 days
+    const MAX_VOTING_TIME: u64 = 90 * 24 * 60 * 60 * 1000; // 90 days
     const MAX_FEE_PERCENT: u8 = 100;
     const MAX_NAME_LENGTH: usize = 50;
     const MAX_DESCRIPTION_LENGTH: usize = 500;
@@ -348,6 +348,7 @@ mod crowdfund {
             Ok(())
         }
 
+        #[ink(message)]
         pub fn get_project_voting_result(&self, project_name: String) -> Result<bool, Error> {
             let info = match self.get_project_info(project_name.clone()) {
                 // also checks if project exists
