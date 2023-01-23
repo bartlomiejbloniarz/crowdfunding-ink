@@ -110,6 +110,11 @@ mod crowdfund {
         }
 
         #[ink(message)]
+        pub fn get_static_info(&self) -> Result<(u64, u8, AccountId), Error> {
+            return Ok((self.voting_length, self.fee_percent, self.owner_account));
+        }
+
+        #[ink(message)]
         pub fn create_project(
             &mut self,
             project_name: String,
@@ -802,7 +807,7 @@ mod tests {
                         test::set_caller::<DefaultEnvironment>(accs.bob);
                         assert_eq!(contract.get_donor_refunded((String::from("Doll")), accs.bob), Ok(true));
                         assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::NoFundsToRefund));
-                        
+
                         test::set_caller::<DefaultEnvironment>(accs.alice);
                         assert_eq!(contract.refund_donation(String::from("Doll")), Err(Error::NoFundsToRefund));
                     },
