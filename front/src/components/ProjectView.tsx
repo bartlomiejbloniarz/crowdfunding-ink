@@ -36,6 +36,9 @@ const ProjectView = () => {
         ovrVotedYes: 1,
         ovrVotedNo: 0,
     })
+    const [refunded, setRefunded] = useState(false)
+    const [claimed, setClaimed] = useState(false)
+    const [vote, setVote] = useState<"Yes" | "No" | null>(null)
 
     const api = useApi()
     const originAddress = useOriginAddress()
@@ -56,6 +59,11 @@ const ProjectView = () => {
         api.getVotingState(projectName!)
             .then(setVotes)
             .catch((e) => addError(`GetVotingState: ${e}`))
+        api.getDonorRefunded(projectName!).then(setRefunded).catch(addError)
+        api.getAuthorClaimed(projectName!).then(setClaimed).catch(addError)
+        api.getVote(projectName!)
+            .then((x) => (x ? setVote("Yes") : setVote("No")))
+            .catch(() => setVote(null))
         // api.getCollectedBudgetSub(projectName!, {handleOk: setRaised, handleErr: addError}).catch(addError)
         // api.getDonatedAmountSub(projectName!, originAddress, {handleOk: setContribution, handleErr: addError}).catch(addError)
     }, [dependency, api, projectName, originAddress])
@@ -86,6 +94,30 @@ const ProjectView = () => {
                             account ? ` (${account.account.meta.name})` : ""
                         }`}</div>
                     </div>
+                    {claimed ? (
+                        <div>
+                            <Box variant="awsui-key-label">Status</Box>
+                            <div>Author claimed</div>
+                        </div>
+                    ) : (
+                        <></>
+                    )}
+                    {refunded ? (
+                        <div>
+                            <Box variant="awsui-key-label">Status</Box>
+                            <div>You refunded</div>
+                        </div>
+                    ) : (
+                        <></>
+                    )}
+                    {vote ? (
+                        <div>
+                            <Box variant="awsui-key-label">Your vote</Box>
+                            <div>{vote}</div>
+                        </div>
+                    ) : (
+                        <></>
+                    )}
                 </SpaceBetween>
 
                 <SpaceBetween size="xxl">
@@ -283,10 +315,8 @@ const ProjectView = () => {
                                                     .refundDonation(
                                                         projectName!,
                                                         {
-                                                            handleOk: () =>
-                                                                console.log(
-                                                                    "OK"
-                                                                ),
+                                                            handleOk:
+                                                                forceUpdate,
                                                             handleErr: addError,
                                                             handleInfo: addInfo,
                                                         }
@@ -301,8 +331,7 @@ const ProjectView = () => {
                                             onClick={() =>
                                                 api
                                                     .claimBudget(projectName!, {
-                                                        handleOk: () =>
-                                                            console.log("OK"),
+                                                        handleOk: forceUpdate,
                                                         handleErr: addError,
                                                         handleInfo: addInfo,
                                                     })

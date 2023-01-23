@@ -38,7 +38,7 @@ type Handler<T> = {
     handleErr: (str: string) => void
 }
 
-const contractAddress = "5CggKY6ozvXFMpe8ZPnxgCsP18bL2VxQufXUKYJ2fFPfAZrY"
+const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS!
 
 export class API {
     private readonly api: ApiPromise
@@ -102,19 +102,25 @@ export class API {
         return getResult(outcome)
     }
 
-    async getCollectedBudgetSub(projectName: string, handler: Handler<number>) {
-        const unsub = await this.api.query.contracts.contractInfoOf(
-            contractAddress,
-            async () => {
-                const outcome = await this.contract.query.getCollectedBudget(
-                    this.originAccount.account.address,
-                    this.options,
-                    projectName
-                )
-
-                handleOutcome(outcome, handler)
-            }
+    async getAuthorClaimed(projectName: string): Promise<boolean> {
+        const outcome = await this.contract.query.getAuthorClaimed(
+            this.originAccount.account.address,
+            this.options,
+            projectName
         )
+
+        return getResult(outcome)
+    }
+
+    async getDonorRefunded(projectName: string): Promise<boolean> {
+        const outcome = await this.contract.query.getDonorRefunded(
+            this.originAccount.account.address,
+            this.options,
+            projectName,
+            this.originAccount.account.address
+        )
+
+        return getResult(outcome)
     }
 
     async getProjectInfo(projectName: string): Promise<ProjectInfo> {
@@ -157,26 +163,6 @@ export class API {
         return getResult(outcome)
     }
 
-    async getDonatedAmountSub(
-        projectName: string,
-        account: string,
-        handler: Handler<number>
-    ) {
-        const unsub = await this.api.query.contracts.contractInfoOf(
-            contractAddress,
-            async () => {
-                const outcome = await this.contract.query.getDonatedAmount(
-                    this.originAccount.account.address,
-                    this.options,
-                    projectName,
-                    account
-                )
-
-                handleOutcome(outcome, handler)
-            }
-        )
-    }
-
     async getVotingState(projectName: string): Promise<ProjectVotes> {
         const outcome = await this.contract.query.getVotingState(
             this.originAccount.account.address,
@@ -187,12 +173,12 @@ export class API {
         return getResult(outcome)
     }
 
-    async getVote(projectName: string, account: string): Promise<boolean> {
+    async getVote(projectName: string): Promise<boolean> {
         const outcome = await this.contract.query.getVote(
             this.originAccount.account.address,
             this.options,
             projectName,
-            account
+            this.originAccount.account.address
         )
 
         return getResult(outcome)
