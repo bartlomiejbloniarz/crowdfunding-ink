@@ -38,7 +38,9 @@ type Handler<T> = {
     handleErr: (str: string) => void
 }
 
-const contractAddress = "5EP4t5qPGv83JsG1ThPzX4fGkwpPn6pSnVAdhWLV7vpgVzu6"
+const contractAddress =
+    process.env.REACT_APP_CONTRACT_ADDRESS ??
+    "5EP4t5qPGv83JsG1ThPzX4fGkwpPn6pSnVAdhWLV7vpgVzu6"
 
 export class API {
     private readonly api: ApiPromise
